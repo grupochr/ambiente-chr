@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHR Representacao - Ambiente de Ferramentas</title>
+<script src="gate.js"></script>
+<style>
+  *{box-sizing:border-box}html,body{margin:0;min-height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#eef2f6;color:#1f2a37;min-height:100vh;display:flex;flex-direction:column}
+  header{background:linear-gradient(135deg,#1f5fae,#16467f);color:#fff;padding:34px 24px 30px;text-align:center}
+  header h1{margin:0;font-size:26px;font-weight:800;letter-spacing:.3px}
+  header p{margin:8px 0 0;opacity:.9;font-size:14px}
+  main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 22px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;max-width:1080px;width:100%}
+  .card{background:#fff;border-radius:18px;box-shadow:0 6px 24px rgba(16,24,40,.10);padding:34px 30px;text-decoration:none;color:inherit;border:1px solid #e3e8ee;transition:.18s;display:flex;flex-direction:column;gap:8px}
+  .card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(16,24,40,.16);border-color:#cdd9e8}
+  .card .ic{width:62px;height:62px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+  .card.vendas .ic{background:#e7f0ff;color:#1f5fae}
+  .card.atacados .ic{background:#e6f5ec;color:#15803d}
+  .card.carteira .ic{background:#f3ecfa;color:#7a3aae}
+  .card.rotas .ic{background:#fdf0e3;color:#c2710c}
+  .card h2{margin:0;font-size:20px;font-weight:800}
+  .card p{margin:0;color:#6b7785;font-size:13.5px;line-height:1.5}
+  .card .go{margin-top:14px;font-weight:700;color:#1f5fae;display:inline-flex;align-items:center;gap:6px}
+  .card.atacados .go{color:#15803d}
+  .card.carteira .go{color:#7a3aae}
+  .card.rotas .go{color:#c2710c}
+  footer{text-align:center;color:#90a0b0;font-size:12px;padding:18px}
+</style>
+</head>
+<body>
+  <header>
+    <h1>CHR Representacao</h1>
+    <p>Ambiente de ferramentas - selecione abaixo</p>
+  </header>
+  <main>
+    <div class="cards">
+      <a class='card vendas' href='/vendas'>
+        <div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div>
+        <h2>Acompanhamento de Vendas</h2>
+        <p>Faturamento, metas 2026, comissoes, representadas, carteira de clientes e segmentos.</p>
+        <span class="go">Abrir &rarr;</span>
+      </a>
+      <a class='card atacados' href='/atacados'>
+        <div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9h.01M9 13h.01M9 17h.01"/></svg></div>
+        <h2>Atacados CHR</h2>
+        <p>Gestao de contatos com atacadistas: status, prioridade, segmentos, WhatsApp e tarefas.</p>
+        <span class="go">Abrir &rarr;</span>
+      </a>
+      <a class='card carteira' href='/carteira'>
+        <div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg></div>
+        <h2>Carteira Master</h2>
+        <p>Base consolidada de clientes (29 mil): ativos, inativos, em contato e prospeccao, com busca e filtros.</p>
+        <span class="go">Abrir &rarr;</span>
+      </a>
+      <a class='card rotas' href='/rotas'>
+        <div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5.5 2.5V6L9 3.5M9 20l6-2.5M9 20V3.5M15 17.5L20.5 20V3.5L15 1M15 17.5V1M15 1L9 3.5"/><circle cx="12" cy="9" r="1.2" fill="currentColor" stroke="none"/></svg></div>
+        <h2>Rotas &amp; Visitas</h2>
+        <p>Roteiro semanal de visitas: rotas por dia/regiao, observacoes por cliente, agendamento no Google Agenda e historico.</p>
+        <span class="go">Abrir &rarr;</span>
+      </a>
+    </div>
+  </main>
+  <footer>CHR Representacao - uso interno</footer>
+</body>
+</html>
