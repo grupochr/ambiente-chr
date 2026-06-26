@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHR - Rotas &amp; Visitas</title>
+<!-- build: rotas v3 (agendar rota inteira) -->
+<script src="gate.js"></script>
+<style>
+  *{box-sizing:border-box}
+  :root{--az:#1f5fae;--az2:#16467f;--bg:#eef2f6;--ink:#1f2a37;--mut:#6b7785;--ln:#e3e8ee;
+        --grn:#15803d;--grnbg:#e6f5ec;--red:#dc2626;--redbg:#fdeaea;--amb:#b45309;--ambbg:#fdf3e3;
+        --vio:#7a3aae;--violbg:#f3ecfa}
+  html,body{margin:0;min-height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  a{color:inherit}
+  header{background:linear-gradient(135deg,var(--az),var(--az2));color:#fff;padding:16px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header .bk{font-size:13px;opacity:.92;text-decoration:none;background:rgba(255,255,255,.15);padding:6px 12px;border-radius:8px}
+  header h1{margin:0;font-size:19px;font-weight:800;flex:1}
+  .syncbadge{font-size:11px;font-weight:700;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:20px}
+  .syncbadge.ok{background:#1f8f4d}.syncbadge.saving{background:#b8860b}.syncbadge.off,.syncbadge.err{background:#b23b3b}
+  .tabs{display:flex;gap:4px;background:#fff;border-bottom:1px solid var(--ln);padding:0 14px;overflow-x:auto}
+  .tab{padding:13px 16px;font-size:14px;font-weight:700;color:var(--mut);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+  .tab.on{color:var(--az);border-bottom-color:var(--az)}
+  main{padding:18px;max-width:1280px;margin:0 auto}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .bar input[type=text],.bar select{padding:8px 10px;border:1px solid var(--ln);border-radius:9px;font-size:13px;background:#fff;color:var(--ink)}
+  .bar input[type=text]{min-width:200px;flex:1}
+  .btn{padding:8px 14px;border:none;border-radius:9px;background:var(--az);color:#fff;font-weight:700;font-size:13px;cursor:pointer}
+  .btn:hover{background:var(--az2)}
+  .btn.gh{background:#fff;color:var(--az);border:1px solid var(--az)}
+  .btn.gh:hover{background:#eaf1fb}
+  .btn.sm{padding:5px 9px;font-size:12px}
+  a.btn{text-decoration:none;display:inline-block}
+  .btn.maps{background:var(--grn)}.btn.maps:hover{background:#0f6a31}
+  .btn.dng{background:var(--red)}.btn.dng:hover{background:#b91c1c}
+  .chip{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#eef2f7;color:var(--mut)}
+  .chip.act{background:var(--grnbg);color:var(--grn)}
+  .chip.pro{background:var(--violbg);color:var(--vio)}
+  .chip.al{background:var(--redbg);color:var(--red)}
+  .chip.ag{background:var(--ambbg);color:var(--amb)}
+  .chip.c30{background:#e7f0ff;color:var(--az)}
+  /* cores por status */
+  .chip.st-av{background:#e7f0ff;color:var(--az)}
+  .chip.st-ag{background:var(--ambbg);color:var(--amb)}
+  .chip.st-vis{background:var(--grnbg);color:var(--grn)}
+  .chip.st-re{background:var(--redbg);color:var(--red)}
+  .chip.st-no{background:#eef2f7;color:#94a3b8}
+  /* ROTEIRO */
+  .wk{font-size:13px;font-weight:800;color:var(--mut);margin:18px 2px 8px;letter-spacing:.4px;text-transform:uppercase}
+  .rotas{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
+  .rt{background:#fff;border:1px solid var(--ln);border-radius:14px;box-shadow:0 3px 12px rgba(16,24,40,.06);display:flex;flex-direction:column}
+  .rt h3{margin:0;padding:13px 14px 8px;font-size:14.5px;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .rt .day{font-size:11px;font-weight:800;color:#fff;background:var(--az);padding:2px 8px;border-radius:6px}
+  .chip.rtdate{background:var(--ambbg);color:var(--amb);font-weight:800}
+  .rt .obs{font-size:12px;color:var(--mut);padding:0 14px 8px;font-style:italic}
+  .rt ul{list-style:none;margin:0;padding:0 8px 6px;flex:1}
+  .rt li{display:flex;align-items:center;gap:8px;padding:7px 6px;border-top:1px solid #f1f4f8}
+  .rt li .nm{flex:1;font-size:13px;cursor:pointer}
+  .rt li .nm:hover{color:var(--az);text-decoration:underline}
+  .rt li .sub{font-size:11px;color:var(--mut)}
+  .rt .ft{padding:8px 12px;border-top:1px solid var(--ln)}
+  .dot{width:9px;height:9px;border-radius:50%;background:#cbd5e1;flex:none}
+  .dot.s-Agendado{background:var(--amb)}.dot.s-Visitado{background:var(--grn)}.dot.s-Reativar{background:var(--red)}.dot.s-Sem{background:#94a3b8}
+  .ic{background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:6px;opacity:.7}
+  .ic:hover{opacity:1;background:#eef2f7}
+  /* DRAG & DROP + selects de semana/dia */
+  .rt.dropon{outline:2px dashed var(--az);outline-offset:-3px;background:#f3f8ff}
+  .rt li.clili{cursor:default}
+  .rt li.clili.dragging{opacity:.35}
+  .rt li.drop-before{box-shadow:inset 0 2px 0 var(--az)}
+  .rt li.drop-after{box-shadow:inset 0 -2px 0 var(--az)}
+  .grip{cursor:grab;color:#c0c8d4;font-size:13px;flex:none;user-select:none;line-height:1}
+  .rt li.clili:hover .grip{color:var(--az)}
+  .rt li.clili:active .grip{cursor:grabbing}
+  .rtmeta{display:flex;gap:4px;flex:none}
+  select.mini{padding:2px 5px;border:1px solid var(--ln);border-radius:6px;font-size:11px;font-weight:800;background:#fff;color:var(--az);cursor:pointer}
+  .hint{font-size:11px;color:var(--mut);display:inline-flex;align-items:center;gap:5px}
+  /* CLIENTES table */
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 3px 12px rgba(16,24,40,.06)}
+  th,td{text-align:left;padding:10px 12px;font-size:13px;border-bottom:1px solid #f1f4f8}
+  th{background:#f7f9fc;color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer}
+  tbody tr{cursor:pointer}tbody tr:hover{background:#f7faff}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  /* PAINEL */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px}
+  .kpi{background:#fff;border:1px solid var(--ln);border-radius:14px;padding:16px}
+  .kpi .v{font-size:26px;font-weight:800;color:var(--az)}
+  .kpi .l{font-size:12px;color:var(--mut);margin-top:2px}
+  .panel{background:#fff;border:1px solid var(--ln);border-radius:14px;padding:16px;margin-bottom:18px}
+  .panel h3{margin:0 0 12px;font-size:15px}
+  .bars div{margin:6px 0}
+  .bars .lb{font-size:12px;display:flex;justify-content:space-between;margin-bottom:2px}
+  .bars .tr{background:#eef2f7;border-radius:6px;height:9px;overflow:hidden}
+  .bars .fl{height:100%;background:var(--az)}
+  /* DRAWER */
+  .ov{position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:1000;display:none}
+  .ov.on{display:block}
+  .drw{position:fixed;top:0;right:0;height:100%;width:430px;max-width:94vw;background:#fff;z-index:1001;box-shadow:-8px 0 30px rgba(0,0,0,.18);transform:translateX(100%);transition:.22s;overflow-y:auto}
+  .drw.on{transform:none}
+  .drw .dh{position:sticky;top:0;background:linear-gradient(135deg,var(--az),var(--az2));color:#fff;padding:16px 18px}
+  .drw .dh h2{margin:0;font-size:17px}
+  .drw .dh .x{position:absolute;top:12px;right:14px;background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:8px;font-size:18px;cursor:pointer}
+  .drw .bd{padding:16px 18px}
+  .sec{margin-bottom:18px}
+  .sec h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut)}
+  .fld{margin-bottom:10px}
+  .fld label{display:block;font-size:12px;color:var(--mut);margin-bottom:3px}
+  .fld input,.fld select,.fld textarea{width:100%;padding:8px 10px;border:1px solid var(--ln);border-radius:9px;font-size:13px;font-family:inherit}
+  .fld textarea{min-height:60px;resize:vertical}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .hist{border-left:3px solid var(--az);background:#f7faff;padding:8px 10px;border-radius:0 8px 8px 0;margin-bottom:7px;font-size:13px}
+  .hist .t{font-size:11px;color:var(--mut);margin-bottom:2px;display:flex;justify-content:space-between}
+  .meta{font-size:12.5px;color:var(--ink);line-height:1.7}
+  .meta b{color:var(--mut);font-weight:600}
+  .empty{color:var(--mut);font-size:13px;font-style:italic}
+  .lk{display:inline-flex;gap:6px;align-items:center;text-decoration:none;font-size:12px;font-weight:700;color:var(--az);background:#eaf1fb;padding:6px 10px;border-radius:8px;margin:0 6px 6px 0}
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1f2a37;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:2000;opacity:0;transition:.2s;pointer-events:none}
+  #toast.on{opacity:1}
+  @media(max-width:560px){.drw{width:100%}.hideSm{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <a class='bk' href='index.html'>&larr; Ambiente</a>
+  <h1>Rotas &amp; Visitas <span id="syncBadge" class="syncbadge">&bull;</span></h1>
+  <button class="btn gh sm" onclick="exportJSON()">Backup</button>
+  <button class="btn gh sm" onclick="document.getElementById('imp').click()">Importar</button>
+  <input id="imp" type="file" accept="application/json" style="display:none" onchange="importJSON(this)">
+</header>
+<div class="tabs">
+  <button class="tab on" data-v="roteiro" onclick="go('roteiro')">Roteiro</button>
+  <button class="tab" data-v="clientes" onclick="go('clientes')">Clientes</button>
+  <button class="tab" data-v="painel" onclick="go('painel')">Painel</button>
+</div>
+<main id="main"></main>
+
+<div class="ov" id="ov" onclick="closeDrw()"></div>
+<div class="drw" id="drw"></div>
+<div id="toast"></div>
+
+<script>
+const SEED = {"ativos": [["A1", "CORDOAÇO", "Goiânia", "GYN-Norte/Ind.", "30d", "Agropecuária", 1068709, 12, 12, "Maccaferri + Vonder", "Conta-chave. Crescer linha ferramentas Vonder"], ["A2", "CASA DOS PARAFUSOS", "Goiânia", "GYN-Centro", "30d", "Ferragista", 418201, 12, 12, "Vonder + NewFix", "Cross-sell Lahuman; abrir Maccaferri"], ["A3", "TOTAL DISTRIBUIDORA", "Goiânia", "GYN-Ind.", "30d", "Atacado Matcon", 245135, 7, 6, "NewFix + Vonder", "ALERTA: parado desde jul. Reativar urgente"], ["A4", "FRANCISCO EDIVALDE RAFAEL JUNIOR", "Goiânia", "GYN-Centro", "30d", "Diversos", 229249, 12, 12, "Vonder 100%", "Recorrente forte. Ampliar mix Vonder"], ["A5", "CASA BRASILEIRA DE ACO (rec.jud.)", "Aparecida", "Aparecida", "30d", "Distrib. Aço", 220259, 12, 10, "Vonder 100%", "Acompanhar de perto (recup. judicial)"], ["A6", "FÁBRICA DE TELAS NERÓPOLIS", "Nerópolis", "Nerópolis", "30d", "Telas", 203787, 12, 12, "Vonder + Maccaferri", "Forte. Defender e crescer Maccaferri"], ["A7", "RAINHA DAS TELAS E FERRAGENS", "Goiânia", "GYN-Norte", "30d", "Telas", 202248, 12, 10, "Maccaferri 100%", "Abrir Vonder e Lahuman"], ["A8", "METAL RÁPIDO FERRO E AÇO", "Goiânia", "GYN-Ind.", "30d", "Distrib. Aço", 184180, 12, 10, "Vonder 100%", "Crescer mix"], ["A9", "IRMÃOS SOARES", "Goiânia", "GYN-Sul", "30d", "Matcon", 174092, 12, 9, "NewFix + Vonder", "Aumentar frequência; mix Vonder"], ["A10", "IMPÉRIO REDE DE PROTEÇÃO/TELA MOSQ.", "Goiânia", "GYN-Sul", "30d", "Redes", 167271, 11, 9, "Lahuman 100%", "Conta Lahuman-chave. Defender"], ["A11", "TELAS CAMPINAS", "Goiânia", "GYN-Campinas", "30d", "Telas", 138013, 12, 11, "Maccaferri 100%", "Abrir Vonder/Lahuman"], ["A12", "TELAS COUTO IND. E COM.", "Goiânia", "GYN-Norte", "30d", "Telas", 129495, 11, 9, "Maccaferri + Vonder", "Crescer mix Vonder"], ["A13", "CAMILO SOARES", "Goiânia", "GYN-Sul", "30d", "Matcon", 126879, 12, 12, "Vonder 100%", "Recorrente. Mix"], ["A14", "SOLUÇÃO TELAS", "Goiânia", "GYN-Ind.", "30d", "Telas", 107595, 12, 6, "Maccaferri 100%", "Aumentar frequência; abrir Vonder/Lahuman"], ["A15", "METAL GOIÁS", "Goiânia", "GYN-Ind.", "30d", "Diversos", 103106, 7, 6, "Maccaferri 100%", "ALERTA: parado desde jul. Reativar"], ["A16", "COMERCIAL VIPASA", "Goiânia", "GYN-Ind.", "30d", "Atacado Matcon", 85085, 11, 10, "Vonder 100%", "Crescer mix"], ["A17", "ACOS GOYAZ INDUSTRIAL", "Goiânia", "GYN-Ind.", "30d", "Distrib. Aço", 84297, 9, 8, "Vonder 100%", "Reaquecer (último: set)"], ["A18", "TH DISTRIB. MAT. CONSTRUÇÃO", "Goiânia", "GYN-Norte", "30d", "Atacado Matcon", 81655, 11, 5, "Vonder + NewFix", "Baixa frequência. Trabalhar recorrência"], ["A19", "PLACK ATACADISTA MAT. CONSTRUÇÃO", "Goiânia", "GYN-Norte", "30d", "Gesso", 67431, 12, 8, "Vonder 100%", "Crescer mix"], ["A20", "ZENITE MATERIAIS P/ CONSTRUÇÃO", "Goiânia", "GYN-Centro", "30d", "Atacado Matcon", 62229, 11, 8, "Vonder 100%", "Crescer mix"], ["A21", "CEDRO DO LÍBANO MADEIRAS/CONST.", "Goiânia", "GYN-Sul", "30d", "Matcon", 45754, 12, 12, "Vonder 100%", "Recorrente. Mix"], ["A22", "TELAS BRASIL", "Goiânia", "GYN-Norte", "30d", "Telas", 50427, 11, 3, "Vonder 100%", "ALERTA: só 3 meses. Recorrência"], ["A23", "FERRAGISTA PINGUIM", "Goiânia", "GYN-Centro", "30d", "Ferragista", 37660, 12, 12, "Vonder 100%", "Recorrente. Abrir Lahuman/NewFix"], ["A24", "COMERCIAL PRIMO DECORAÇÕES", "Goiânia", "GYN-Centro", "30d", "Diversos", 33452, 12, 11, "Vonder + NewFix", "Recorrente menor. Crescer mix"], ["A25", "DIPS DISTRIB. PROD. ELETRÔNICOS", "Goiânia", "GYN-Centro", "30d", "Diversos", 24987, 12, 4, "Vonder 100%", "Baixa frequência. Recorrência"], ["A26", "ATLAS PARAFUSOS", "Goiânia", "GYN-Centro", "30d", "Ferragista", 20709, 9, 2, "NewFix 100%", "Reativar; abrir Vonder"], ["A27", "GOYAZ AÇO IND. E COM. FERROS", "Goiânia", "GYN-Ind.", "30d", "Distrib. Aço", 13150, 12, 6, "Vonder 100%", "Crescer mix e frequência"], ["A28", "HB DISTRIBUIDORA DRYWALL", "Goiânia", "GYN-Norte", "30d", "Gesso", 19732, 9, 1, "Vonder 100%", "Reativar (1 compra)"], ["A29", "NACIONAL TELAS", "Goiânia", "GYN-Campinas", "30d", "Telas", 37335, 12, 3, "Maccaferri 100%", "Frequência; abrir Vonder/Lahuman"], ["A30", "GUACHUKA AGROPEC. (Costa&Santana)", "Goiânia", "GYN-Sul", "30d", "Agropecuária", 17598, 12, 12, "Vonder 100%", "Recorrente. Mix Lahuman agro"], ["A31", "REINO DA BORRACHA", "Goiânia", "GYN-Centro", "30d", "Borracha/Lonas", 0, 0, 0, "Lahuman (ativo base)", "Conta Lahuman ativa na base — abrir via CHR"], ["A32", "FERMAQUI", "Goiânia", "GYN-Centro", "30d", "Ferragista", 7056, 11, 1, "Lahuman 100%", "Recém-aberto Lahuman. Desenvolver"], ["A33", "V8 DISTRIB. DRYWALL", "Aparecida", "Aparecida", "30d", "Gesso", 85503, 12, 9, "Maccaferri + Vonder", "Crescer Vonder"], ["A34", "FERRAGISTA SÃO PAULO", "Aparecida", "Aparecida", "30d", "Ferragista", 62646, 12, 7, "Vonder + Macca + NewFix", "Bom mix. Frequência; abrir Lahuman"], ["A35", "CASA DAS TELAS", "Aparecida", "Aparecida", "30d", "Telas", 54109, 10, 5, "Lahuman + Maccaferri", "Crescer Lahuman; baixa frequência"], ["A36", "ATACADO CASA", "Aparecida", "Aparecida", "30d", "Diversos", 56946, 12, 4, "Maccaferri 100%", "Recorrência + abrir Vonder"], ["A37", "TELA ANHANGUERA", "Aparecida", "Aparecida", "30d", "Telas", 72130, 11, 6, "Maccaferri 100%", "Abrir Vonder/Lahuman"], ["A38", "FERRO PRONTO (A Ferro Pronto)", "Aparecida", "Aparecida", "30d", "Distrib. Aço", 39704, 7, 4, "Vonder + NewFix", "ALERTA: parado desde jul. Reativar"], ["A39", "NACIONAL FERROS", "Aparecida", "Aparecida", "30d", "Distrib. Aço", 36731, 10, 3, "NewFix + Vonder", "Crescer frequência"], ["A40", "AMÉRICA TELAS", "Anápolis", "Anápolis", "30d", "Telas", 571035, 12, 12, "Maccaferri + Vonder", "Conta-chave. Defender Macca, crescer Vonder"], ["A41", "TELAS SANTA CRUZ", "Anápolis", "Anápolis", "30d", "Telas", 218016, 12, 12, "Vonder 100%", "Recorrente forte. Abrir Maccaferri/Lahuman"], ["A42", "FERRAGISTA ITABERAÍ", "Itaberaí", "Oeste (Itaberaí/Itapuranga)", "60d", "Ferragista", 133655, 12, 12, "Vonder 100%", "Recorrente forte"], ["A43", "GUIRIN TUDO P/ AGROPEC.", "Itaberaí", "Oeste (Itaberaí/Itapuranga)", "60d", "Agropecuária", 31120, 11, 2, "Lahuman 100%", "Desenvolver Lahuman; frequência"], ["A44", "JOÃO ABRANTE SARMENTO NETO", "Marzagão", "Sul (Marzagão/Pires Rio)", "60d", "Telas", 138019, 12, 11, "Vonder 100%", "Forte"], ["A45", "LM AGROTELAS E MATERIAIS", "Pires do Rio", "Sul (Marzagão/Pires Rio)", "60d", "Telas", 62909, 11, 9, "Vonder 100%", "Crescer mix"], ["A46", "CASA BRASIL FERRAMENTAS", "Rio Verde", "Sudoeste (Rio Verde/Jataí)", "60d", "Ferragista", 101697, 12, 12, "Vonder 100%", "Recorrente forte"], ["A47", "BRASFER COM. DE FERRO", "Rio Verde", "Sudoeste (Rio Verde/Jataí)", "60d", "Distrib. Aço", 90668, 10, 6, "NewFix+Vonder+Macca", "Mix bom; frequência"], ["A48", "CONSTRULAR COMERCIAL", "Rio Verde", "Sudoeste (Rio Verde/Jataí)", "60d", "Matcon", 18288, 11, 3, "Vonder 100%", "Crescer frequência"], ["A49", "J. CRUZEIRO DA COSTA E CIA", "Jataí", "Sudoeste (Rio Verde/Jataí)", "60d", "Matcon", 39324, 12, 8, "Vonder 100%", "Crescer mix"], ["A50", "POINT FERRAMENTAS", "Bela Vista de GO", "Sul-próx (Bela Vista)", "60d", "Ferragista", 84488, 12, 10, "Vonder 100%", "Crescer mix; abrir Lahuman"], ["A51", "COOPERBELGO", "Bela Vista de GO", "Sul-próx (Bela Vista)", "60d", "Agropecuária", 23676, 12, 3, "Vonder 100%", "Cooperativa. Desenvolver Lahuman agro"], ["A52", "CLAUDETO", "Águas Lindas", "Entorno DF", "60d", "Telas", 80850, 12, 12, "Vonder 100%", "Recorrente (entorno DF)"], ["A53", "A3D COMMERCE AND TRADE", "Jaraguá", "Norte (Jaraguá/Campinorte)", "60d", "Telas", 100242, 10, 8, "Maccaferri + Vonder", "Reaquecer (último out)"], ["A54", "CASA E CAMPO MÁQUINAS", "Jaraguá", "Norte (Jaraguá/Campinorte)", "60d", "Agropecuária", 5275, 11, 3, "Vonder 100%", "Pequeno. Desenvolver"], ["A55", "G PRÉ-MOLDADOS", "Campinorte", "Norte (Jaraguá/Campinorte)", "60d", "Telas", 78340, 12, 6, "Maccaferri 100%", "Aumentar frequência"], ["A56", "HIPERMERCADO CASAS DA LAVOURA", "Campinorte", "Norte (Jaraguá/Campinorte)", "60d", "Agropecuária", 12045, 12, 2, "Vonder 100%", "Desenvolver Lahuman agro"], ["A57", "MAROC", "S. Luís M. Belos", "Oeste (Itaberaí/Itapuranga)", "60d", "Telas", 61840, 11, 5, "Maccaferri 100%", "Abrir Vonder/Lahuman; frequência"], ["A58", "NUTRIBEM AGROPECUÁRIA", "Itumbiara", "Sul (Itumbiara)", "60d", "Agropecuária", 143523, 12, 12, "Vonder 100%", "Recorrente forte"], ["A59", "COMIGO", "Acreúna", "Sudoeste (Rio Verde/Jataí)", "60d", "Agropecuária", 80298, 11, 6, "Lahuman 100%", "Cooperativa-chave Lahuman"], ["A60", "COMIVA", "Mineiros", "Sudoeste-ext (Mineiros)", "60d", "Agropecuária", 20460, 7, 1, "Lahuman 100%", "ALERTA: 1 compra. Reativar"], ["A61", "PARANÁ FERRAGISTA", "Mineiros", "Sudoeste-ext (Mineiros)", "60d", "Ferragista", 21649, 12, 4, "Vonder 100%", "Crescer frequência"], ["A62", "MARA RUBIA ZANUTO", "Quirinópolis", "Sul (Itumbiara)", "60d", "Agropecuária", 6758, 10, 9, "Vonder 100%", "Pequeno recorrente. Lahuman"], ["A63", "COOP. AGROP. CORUMBAÍBA", "Corumbaíba", "Sul (Itumbiara)", "60d", "Agropecuária", 5520, 11, 4, "Vonder 100%", "Cooperativa. Desenvolver"], ["A64", "COPARPA", "", "", "", "", 0, 0, 0, "", "A classificar"], ["A65", "REVESTBRAS - PRODUTOS IMPERMEABILIZANTES", "", "", "", "", 0, 0, 0, "", "A classificar"], ["A66", "JATAI TELAS", "", "", "", "", 0, 0, 0, "", "A classificar"], ["A67", "NUTRISAL IND COM IMPORTACAO E EXP LTDA", "", "", "", "", 0, 0, 0, "", "A classificar"], ["A68", "GESSOLAR LTDA", "", "", "", "", 0, 0, 0, "", "A classificar"], ["A69", "COMERCIAL CAGE LTDA", "", "", "", "", 0, 0, 0, "", "A classificar"]], "prospects": [["P2", "Hospital das Lonas", "Goiânia", "GYN-Centro", "30d", "Lonas", "LAHUMAN", "Ativo base Lahuman. Lonas/coberturas"], ["P3", "Grandão Lonas", "Goiânia", "GYN-Norte", "30d", "Lonas", "LAHUMAN", "Lonas — fit direto Lahuman"], ["P4", "Rainha das Lonas", "Goiânia", "GYN-Centro", "30d", "Lonas", "LAHUMAN", "Lonas — fit Lahuman"], ["P5", "Top Lonas e Tendas", "Goiânia", "GYN-Sul", "30d", "Lonas/Tendas", "LAHUMAN", "Lonas e tendas — fit Lahuman"], ["P6", "Falcão Automotivo e Lonas", "Goiânia", "GYN-Sul", "30d", "Lonas", "LAHUMAN", "Lonas automotivas — fit Lahuman"], ["P7", "GP Redes de Proteção", "Goiânia", "GYN-Sul", "30d", "Redes", "LAHUMAN", "Redes — espelho do Império (conta-chave)"], ["P8", "Mega Borrachas", "Goiânia", "GYN-Centro", "30d", "Borracha", "LAHUMAN", "Borracha/lonas — fit Lahuman"], ["P9", "Ideal Borrachas", "Goiânia", "GYN-Centro", "30d", "Borracha", "LAHUMAN", "Borracha/lonas — fit Lahuman"], ["P10", "Águia Borrachas", "Goiânia", "GYN-Centro", "30d", "Borracha", "LAHUMAN", "Borracha/lonas — fit Lahuman"], ["P11", "Borrachas Anhanguera", "Goiânia", "GYN-Norte", "30d", "Borracha", "LAHUMAN", "Borracha/lonas — fit Lahuman"], ["P12", "Planalto Borrachas (Wesley)", "Goiânia", "GYN-Norte", "30d", "Borracha", "LAHUMAN", "Lead carteira. Borracha/lonas — Lahuman"], ["P13", "HBS Borrachas", "Goiânia", "GYN-Centro", "30d", "Borracha", "LAHUMAN", "Borracha/lonas — fit Lahuman"], ["P14", "SOS Borrachas/Mangueiras", "Goiânia", "GYN-Centro", "30d", "Borracha", "LAHUMAN", "Lead carteira (Germana). Lahuman"], ["P15", "Cia da Irrigação", "Goiânia", "GYN-Sul", "30d", "Irrigação/Agro", "LAHUMAN", "Irrigação — fit Lahuman (lonas/tubos) + agro"], ["P16", "Casa da Irrigação", "Goiânia", "GYN-Sul", "30d", "Irrigação/Agro", "LAHUMAN", "Irrigação — fit Lahuman + agro"], ["P17", "Ferragista Guerreiro (Lucas)", "Goiânia", "GYN-Centro", "30d", "Ferragista", "VONDER", "Lead carteira. Ferramentas Vonder"], ["P18", "CL Ferramentas", "Goiânia", "GYN-Centro", "30d", "Ferragista", "VONDER", "Ferragista — Vonder"], ["P19", "Ferra Sul (Cláudio)", "Goiânia", "GYN-Sul", "30d", "Ferragista", "VONDER", "Lead carteira. Vonder"], ["P20", "Ferramaq (Marco Aurélio)", "Goiânia", "GYN-Centro", "30d", "Ferragista", "VONDER", "Lead carteira (Ferramaq/Masi/ABC). Vonder"], ["P21", "WM Parafusos (Jaqueline)", "Goiânia", "GYN-Centro", "30d", "Ferragista", "VONDER", "Lead carteira FER GO. Vonder + NewFix"], ["P22", "Futura Atacadista", "Goiânia", "GYN-Ind.", "30d", "Atacado Matcon", "VONDER", "Atacado — Vonder ferramentas/EPI"], ["P23", "UHC Distribuidora", "Goiânia", "GYN-Ind.", "30d", "Atacado Matcon", "VONDER", "Atacado — Vonder + NewFix"], ["P24", "RD Distribuidora", "Goiânia", "GYN-Ind.", "30d", "Atacado Matcon", "VONDER", "Atacado — Vonder"], ["P25", "Depósito Amazonas (Leandro)", "Goiânia", "GYN-Norte", "30d", "Matcon", "VONDER", "Lead carteira. Vonder"], ["P26", "Rainha dos Compressores", "Goiânia", "GYN-Centro", "30d", "Ferramentas", "VONDER", "Compressores/ferramentas — Vonder"], ["P27", "Rei dos Compressores", "Goiânia", "GYN-Centro", "30d", "Ferramentas", "VONDER", "Compressores/ferramentas — Vonder"], ["P28", "Casas Brasil", "Goiânia", "GYN-Sul", "30d", "Matcon", "VONDER", "Matcon — Vonder"], ["P29", "Eletrocenter", "Abadia de Goiás", "Aparecida", "30d", "Elétrica/Ferr.", "VONDER", "Elétrica/ferramentas — Vonder"], ["P30", "D'Casa", "Bela Vista de GO", "Sul-próx (Bela Vista)", "60d", "Matcon", "VONDER", "Matcon — Vonder"], ["P31", "Ruiter Coelho (Itapuranga)", "Itapuranga", "Oeste (Itaberaí/Itapuranga)", "60d", "Ferragista", "VONDER", "Histórico antigo (R$36k). Reativar Vonder"], ["P32", "Casa da Roça", "Goiatuba", "Sul (Itumbiara)", "60d", "Agropecuária", "LAHUMAN", "Agro — Lahuman + Vonder"], ["P33", "Agroforte (Ipameri)", "Ipameri", "Sul (Itumbiara)", "60d", "Agropecuária", "LAHUMAN", "Agro — Lahuman"], ["P34", "Boiforte Agropec.", "Goiânia", "GYN-Sul", "30d", "Agropecuária", "LAHUMAN", "Agro — Lahuman + Vonder"], ["P35", "Casa do Criador", "Araguapaz", "Oeste (Itaberaí/Itapuranga)", "60d", "Agropecuária", "LAHUMAN", "Agro — Lahuman"], ["P36", "Casa do Pecuarista", "Goiânia", "GYN-Sul", "30d", "Agropecuária", "LAHUMAN", "Agro — Lahuman + Vonder"], ["P37", "Agropecuária Mineiros", "Mineiros", "Sudoeste-ext (Mineiros)", "60d", "Agropecuária", "LAHUMAN", "Agro — Lahuman"], ["P38", "Complemento Nutrição Animal", "S. Miguel Araguaia", "Norte-ext", "60d", "Agropecuária", "LAHUMAN", "Agro — Lahuman"], ["P39", "Cooperativas agro (Cooperlc/Coopervi/Coopaouro/Cpvp)", "Vários GO", "A definir", "60d", "Agropecuária", "LAHUMAN", "Bloco cooperativas — qualificar e roteirizar"], ["P40", "Móveis Estrela / Casa Brasil / outros", "A confirmar", "A definir", "60d", "A confirmar", "A QUALIFICAR", "Sem dados — confirmar cidade/segmento antes"], ["P41", "Bella Distribuidora", "Goiânia", "", "", "Aço", "", "A classificar"], ["P42", "COMERCIAL DE ARAME GOIATUBA LTDA", "", "", "", "", "", "A classificar"], ["P43", "COMERCIAL MINAS ACO MAT PARA CONST", "", "", "", "", "", "A classificar"]], "roteiro": [{"sem": 1, "dia": "Ter", "reg": "Goiânia — CENTRO", "ids": ["A2", "A4", "A20", "A24", "A23"], "obs": "Ativos centro + prospect Vonder (Ferramaq ou Ferragista Guerreiro)"}, {"sem": 1, "dia": "Qua", "reg": "Goiânia — INDUSTRIAL/Norte Ferrov.", "ids": ["A3", "A8", "A14", "A15", "A16"], "obs": "2 reativações + prospect atacado (Futura/UHC)"}, {"sem": 1, "dia": "Qui", "reg": "Goiânia — SUL/Pç. Cuiabá", "ids": ["A9", "A10", "A13", "A21", "A30"], "obs": "Ativos sul + prospect Lahuman (GP Redes / Boiforte)"}, {"sem": 2, "dia": "Ter", "reg": "Goiânia — NORTE/Av. Bernardo Sayão", "ids": ["A1", "A7", "A12", "A18", "A19"], "obs": "Conta-chave Cordoaço + prospect (Depósito Amazonas)"}, {"sem": 2, "dia": "Qua", "reg": "APARECIDA DE GOIÂNIA", "ids": ["A5", "A33", "A34", "A35", "A36"], "obs": "Cluster Aparecida (8 ativos — dividir em 2 visitas/ciclo)"}, {"sem": 2, "dia": "Qui", "reg": "APARECIDA (parte 2) + Abadia", "ids": ["A37", "A38", "A39", "P29"], "obs": "Fecha Aparecida + 1 prospect Vonder"}, {"sem": 3, "dia": "Ter", "reg": "ANÁPOLIS (dia inteiro)", "ids": ["A40", "A41"], "obs": "Conta-chave América Telas. Aproveitar p/ prospectar"}, {"sem": 3, "dia": "Qua", "reg": "Goiânia — CAMPINAS/Setor", "ids": ["A11", "A29", "A31", "A32", "A26"], "obs": "Telas + desenvolver Lahuman (Reino/Fermaqui)"}, {"sem": 3, "dia": "Qui", "reg": "NERÓPOLIS + retorno", "ids": ["A6"], "obs": "Conta forte Nerópolis (≈30 km GYN)"}, {"sem": 4, "dia": "Ter", "reg": "SUDOESTE — Rio Verde/Jataí (pernoite)", "ids": ["A46", "A47", "A48", "A49", "A59"], "obs": "Viagem dia inteiro. Alterna c/ Mineiros no ciclo seguinte"}, {"sem": 4, "dia": "Qua", "reg": "SUL — Itumbiara/Goiatuba", "ids": ["A58", "A62", "A63", "P32"], "obs": "Eixo BR-153 sul"}, {"sem": 4, "dia": "Qui", "reg": "SUL-próx — Bela Vista / Pires Rio / Marzagão", "ids": ["A50", "A51", "A45", "A44"], "obs": "Rota curta sul, volta no mesmo dia"}], "cap": {"visDia": 4, "diasSem": 3, "visSem": 12, "semMes": 4, "demanda": 88, "ativos30": 41, "prosp30": 31, "ativos60": 22, "prosp60": 9}};
+const API_URL="api.php", STORE="rotas";
+const DIAS=["Seg","Ter","Qua","Qui","Sex"];
+const STATUS=["A visitar","Agendado","Visitado","Reativar","Sem interesse"];
+const PRIOS=["Alta","Média","Baixa"];
+
+/* ---------- estado ---------- */
+let DB=null, view="roteiro", selId=null, sortK="fat", sortDir=-1;
+const STORE_KEY="chr_rotas_db_v1";
+
+function blankDB(){return {v:1,updated_at:0,rotas:[],ov:{},custom:[],ag:[]};}
+function norm(s){return (s||"").toString().normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");}
+
+/* master de clientes (seed + custom) */
+function baseClientes(){
+  const out=[];
+  SEED.ativos.forEach(a=>out.push({id:a[0],nome:a[1],cidade:a[2],reg:a[3],ciclo:a[4],seg:a[5],fat:a[6],ultMes:a[7],meses:a[8],mix:a[9],foco:a[10],marca:"",tipo:"ativo"}));
+  SEED.prospects.forEach(p=>out.push({id:p[0],nome:p[1],cidade:p[2],reg:p[3],ciclo:p[4],seg:p[5],fat:0,ultMes:0,meses:0,mix:"",foco:p[7],marca:p[6],tipo:"prospect"}));
+  return out;
+}
+let CLI=[], CMAP={};
+function rebuild(){
+  CLI=baseClientes();
+  (DB.custom||[]).forEach(c=>CLI.push(Object.assign({tipo:"custom",fat:0,ultMes:0,meses:0,mix:"",foco:"",marca:""},c)));
+  CMAP={}; CLI.forEach(c=>CMAP[c.id]=c);
+}
+function getCli(id){return CMAP[id];}
+function ov(id){ if(!DB.ov[id])DB.ov[id]={}; return DB.ov[id]; }
+function cicloDias(c){const m=String((c&&c.ciclo)||"").match(/\d+/);return m?parseInt(m[0],10):30;}
+function lastVisitISO(id){const o=DB.ov[id]||{};let t=0;(o.vis||[]).forEach(v=>{if((v.res==="Visitado"||v.res==="Pedido")&&v.t>t)t=v.t;});return t?new Date(t).toISOString().slice(0,10):"";}
+function daysBetween(a,b){if(!a||!b)return null;return Math.round((new Date(b+"T00:00:00")-new Date(a+"T00:00:00"))/864e5);}
+function autoStatus(id){
+  const c=getCli(id),o=DB.ov[id]||{};
+  if(o.status==="Sem interesse")return "Sem interesse";
+  if((DB.ag||[]).some(a=>a.cid===id&&a.data>=todayISO()))return "Agendado";
+  const cic=cicloDias(c),lv=lastVisitISO(id);
+  if(lv){const d=daysBetween(lv,todayISO());
+    if(d<=cic)return "Visitado";
+    if(d<=cic*2)return "A visitar";
+    return "Reativar";}
+  if(c&&/ALERTA/i.test(c.foco||""))return "Reativar";
+  if(c&&c.tipo==="ativo"&&c.meses>0&&c.meses<=3)return "Reativar";
+  return "A visitar";
+}
+function statusOf(id){const o=DB.ov[id]; if(o&&o.status)return o.status; return autoStatus(id);}
+function statusCls(st){return st==="Visitado"?"st-vis":st==="Agendado"?"st-ag":st==="Reativar"?"st-re":st==="Sem interesse"?"st-no":"st-av";}
+function isAlerta(c){const o=DB.ov[c.id]||{};const st=statusOf(c.id);
+  if(st==="Sem interesse")return false;
+  if(st==="Reativar")return true;
+  if(/ALERTA/i.test(c.foco||""))return true;
+  if(c.tipo==="ativo"&&c.meses>0&&c.meses<=3)return true;
+  const lv=lastVisitISO(c.id);if(lv){const d=daysBetween(lv,todayISO());if(d!==null&&d>cicloDias(c))return true;}
+  return false;}
+
+/* seed das rotas na 1a vez */
+function seedRotas(){
+  if(DB.rotas&&DB.rotas.length)return;
+  DB.rotas = SEED.roteiro.map((r,i)=>({id:"R"+(i+1),nome:"S"+r.sem+" "+r.dia+" — "+r.reg,dia:r.dia,reg:r.reg,obs:r.obs,ids:r.ids.slice(),ord:i,sem:r.sem}));
+}
+
+/* ---------- persistencia / sync ---------- */
+let API_ON=false,pushTimer=null,pushing=false,dirty=false,lastStamp=0,pollTimer=null;
+function token(){try{return (window.chrToken&&window.chrToken())||sessionStorage.getItem("chr_pass")||"";}catch(e){return"";}}
+function api(p){return fetch(API_URL+"?"+p).then(r=>r.json());}
+function setSync(s){const b=document.getElementById("syncBadge");if(!b)return;b.className="syncbadge "+(s||"");b.textContent=s==="ok"?"sincronizado":s==="saving"?"salvando...":s==="off"?"offline (local)":s==="err"?"erro":"•";}
+function saveLocal(){try{localStorage.setItem(STORE_KEY,JSON.stringify(DB));}catch(e){}}
+function changed(){DB.updated_at=Date.now();saveLocal();schedulePush();}
+function schedulePush(){dirty=true;if(API_ON)setSync("saving");clearTimeout(pushTimer);pushTimer=setTimeout(pushToServer,700);}
+async function putStore(obj){const str=JSON.stringify(obj),tok=encodeURIComponent(token());const sid=Math.random().toString(36).slice(2)+Date.now().toString(36);const CH=6000,total=Math.max(1,Math.ceil(str.length/CH));for(let i=0;i<total;i++){const part=encodeURIComponent(str.slice(i*CH,(i+1)*CH));const j=await api("action=put&token="+tok+"&store="+STORE+"&sid="+sid+"&seq="+i+"&total="+total+"&part="+part);if(!j||!j.ok)throw new Error("put");}const jc=await api("action=commit&token="+tok+"&store="+STORE+"&sid="+sid);if(!jc||!jc.ok)throw new Error("commit");return jc.updated_at;}
+async function pushToServer(){if(!API_ON){dirty=false;return;}if(pushing){schedulePush();return;}pushing=true;try{const u=await putStore(DB);lastStamp=u||DB.updated_at;dirty=false;setSync("ok");}catch(e){setSync("err");}finally{pushing=false;}}
+function startPolling(){if(pollTimer)return;pollTimer=setInterval(async()=>{if(!API_ON||pushing||dirty)return;const ae=document.activeElement;if(ae&&/INPUT|TEXTAREA|SELECT/.test(ae.tagName))return;try{const j=await api("action=stamp&token="+encodeURIComponent(token())+"&store="+STORE);if(j&&j.ok&&j.updated_at&&j.updated_at!==lastStamp){const j2=await api("action=get&token="+encodeURIComponent(token())+"&store="+STORE);if(j2&&j2.ok&&j2.data){DB=migrate(j2.data);lastStamp=j2.updated_at||0;saveLocal();rebuild();render();setSync("ok");}}}catch(e){setSync("off");}},15000);}
+async function initSync(){const tok=token();if(!tok){API_ON=false;setSync("off");return;}try{const j=await api("action=get&token="+encodeURIComponent(tok)+"&store="+STORE);if(!j||!j.ok){API_ON=false;setSync("off");return;}API_ON=true;if(j.data){DB=migrate(j.data);lastStamp=j.updated_at||0;seedRotas();saveLocal();rebuild();render();setSync("ok");}else{seedRotas();await pushToServer();setSync("ok");}startPolling();}catch(e){API_ON=false;setSync("off");}}
+function migrate(d){const b=blankDB();return Object.assign(b,d||{},{rotas:(d&&d.rotas)||[],ov:(d&&d.ov)||{},custom:(d&&d.custom)||[],ag:(d&&d.ag)||[]});}
+
+/* ---------- helpers ---------- */
+const $=(s,r)=>(r||document).querySelector(s);
+const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money=n=>n?("R$ "+Number(n).toLocaleString("pt-BR")):"—";
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("on"),1900);}
+function fmtTS(ts){const d=new Date(ts);return d.toLocaleDateString("pt-BR")+" "+d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});}
+function fmtD(iso){if(!iso)return "";const d=new Date(iso+"T00:00:00");return d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});}
+function todayISO(){return new Date().toISOString().slice(0,10);}
+
+/* ---------- navegacao ---------- */
+function go(v){view=v;document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===v));render();}
+function render(){if(view==="roteiro")renderRoteiro();else if(view==="clientes")renderClientes();else renderPainel();}
+
+/* ======================= ROTEIRO ======================= */
+let fDia="", fRegR="";
+function renderRoteiro(){
+  const regs=[...new Set(DB.rotas.map(r=>r.reg))];
+  let h='<div class="bar">'+
+    '<select onchange="fDia=this.value;renderRoteiro()"><option value="">Todos os dias</option>'+DIAS.map(d=>`<option ${fDia===d?"selected":""}>${d}</option>`).join("")+'</select>'+
+    '<select onchange="fRegR=this.value;renderRoteiro()"><option value="">Todas as regiões</option>'+regs.map(r=>`<option ${fRegR===r?"selected":""}>${esc(r)}</option>`).join("")+'</select>'+
+    '<button class="btn" onclick="newRota()">+ Nova rota</button>'+
+    '<button class="btn gh" onclick="reorganizarRotas()" title="Reagrupa por cidade/zona, clientes mais próximos juntos">⤿ Reorganizar por proximidade</button>'+
+    '<span class="hint">⠿ arraste clientes entre as rotas</span>'+
+    '<span style="flex:1"></span>'+
+    `<span class="chip">${DB.rotas.length} rotas</span>`+
+    '</div>';
+  let list=DB.rotas.slice().sort((a,b)=>(a.sem||9)-(b.sem||9)||DIAS.indexOf(a.dia)-DIAS.indexOf(b.dia)||a.ord-b.ord);
+  if(fDia)list=list.filter(r=>r.dia===fDia);
+  if(fRegR)list=list.filter(r=>r.reg===fRegR);
+  let lastSem=null;
+  h+='<div class="rotas">';
+  list.forEach(r=>{ h+=cardRota(r); });
+  h+='</div>';
+  if(!list.length)h+='<p class="empty">Nenhuma rota com esse filtro.</p>';
+  $("#main").innerHTML=h;
+}
+function cardRota(r){
+  const semVal=(r.sem&&r.sem>=1&&r.sem<=4)?r.sem:9;
+  const wkOpts=[1,2,3,4].map(n=>`<option value="${n}" ${semVal===n?"selected":""}>S${n}</option>`).join("")+`<option value="9" ${semVal===9?"selected":""}>S—</option>`;
+  const dayOpts='<option value="">—</option>'+DIAS.map(d=>`<option ${r.dia===d?"selected":""}>${d}</option>`).join("");
+  const title=r.reg||r.nome;
+  let h=`<div class="rt" data-rid="${r.id}" ondragover="rtDragOver(event,'${r.id}')" ondragleave="rtDragLeave(event)" ondrop="rtDrop(event,'${r.id}')">`+
+    `<h3><span class="rtmeta">`+
+      `<select class="mini" title="Semana" onchange="setRotaMeta('${r.id}','sem',this.value)">${wkOpts}</select>`+
+      `<select class="mini" title="Dia da semana" onchange="setRotaMeta('${r.id}','dia',this.value)">${dayOpts}</select>`+
+    `</span>`+
+    `<span class="rttitle" style="flex:1">${esc(title)}${r.dataAg?` <span class="chip rtdate" title="Rota agendada para ${fmtD(r.dataAg)}">📅 ${fmtD(r.dataAg)}</span>`:""}</span>`+
+    `<button class="ic" title="Agendar rota inteira num dia" onclick="openAgendaRota('${r.id}')">📅</button>`+
+    `<button class="ic" title="Editar rota" onclick="editRota('${r.id}')">✎</button>`+
+    `<button class="ic" title="Excluir rota" onclick="delRota('${r.id}')">🗑</button></h3>`;
+  if(r.obs)h+=`<div class="obs">${esc(r.obs)}</div>`;
+  h+=`<ul class="rtlist">`;
+  if(!r.ids.length)h+='<li class="emptyli"><span class="empty">Solte clientes aqui</span></li>';
+  r.ids.forEach(id=>{
+    const c=getCli(id); if(!c)return;
+    const o=DB.ov[id]||{}; const st=statusOf(id);
+    const stc=st==="Sem interesse"?"Sem":st;
+    h+=`<li class="clili" draggable="true" data-cid="${id}" ondragstart="cliDragStart(event,'${r.id}','${id}')" ondragend="cliDragEnd(event)">`+
+       `<span class="grip" title="Arraste para mover">⠿</span>`+
+       `<span class="dot s-${stc}" title="${st}"></span>`+
+       `<span class="nm" onclick="openDrw('${id}')">${esc(c.nome)}${o.soAg?' 📅':""}</span>`+
+       `<span class="sub hideSm">${esc(c.cidade||"")}</span>`+
+       `<a class="ic" title="Ver no Maps" target="_blank" href="${mapsCliUrl(c)}" onclick="event.stopPropagation()">📍</a>`+
+       `<button class="ic" title="Agendar" onclick="event.stopPropagation();openDrw('${id}','ag')">📅</button>`+
+       `<button class="ic" title="Observação" onclick="event.stopPropagation();openDrw('${id}','obs')">📝</button>`+
+       `<button class="ic" title="Remover da rota" onclick="event.stopPropagation();rmFromRota('${r.id}','${id}')">✖</button></li>`;
+  });
+  h+="</ul>";
+  h+=`<div class="ft"><button class="btn gh sm" onclick="addToRotaPick('${r.id}')">+ Adicionar cliente</button>`+
+     (r.ids.length?` <button class="btn sm" style="background:var(--amb)" onclick="openAgendaRota('${r.id}')" title="Agendar a rota inteira num dia">📅 Agendar dia</button>`:"")+
+     (r.ids.length?` <a class="btn sm maps" target="_blank" href="${mapsRotaUrl(r)}" title="Abrir a rota inteira no Google Maps (na ordem da lista)">🗺️ Gerar rota no Maps</a>`:"")+
+     `</div>`;
+  h+="</div>";
+  return h;
+}
+function newRota(){
+  const nome=prompt("Nome da rota (ex.: Rota Goiânia Centro / Viagem RS Julho):");if(!nome)return;
+  const id="R"+Date.now().toString(36);
+  DB.rotas.push({id,nome:nome.trim(),dia:"",reg:"",obs:"",ids:[],ord:DB.rotas.length,sem:9});
+  changed();renderRoteiro();
+}
+function editRota(id){
+  const r=DB.rotas.find(x=>x.id===id);if(!r)return;
+  const reg=prompt("Região / praça (título da rota):",r.reg||r.nome||"");if(reg===null)return;
+  const obs=prompt("Observação da rota:",r.obs||"");if(obs===null)return;
+  r.reg=reg.trim();if(!r.nome)r.nome=r.reg;r.obs=obs.trim();
+  changed();renderRoteiro();
+}
+/* alterar semana/dia direto no card */
+function setRotaMeta(rid,k,v){
+  const r=DB.rotas.find(x=>x.id===rid);if(!r)return;
+  if(k==="sem")r.sem=parseInt(v,10)||9; else r[k]=v;
+  changed();renderRoteiro();
+}
+/* ----- arrastar clientes entre rotas ----- */
+let dragCid=null,dragFromRid=null;
+function cliDragStart(e,rid,cid){
+  dragCid=cid;dragFromRid=rid;
+  e.dataTransfer.effectAllowed="move";
+  try{e.dataTransfer.setData("text/plain",cid);}catch(_){}
+  e.currentTarget.classList.add("dragging");
+}
+function cliDragEnd(e){
+  e.currentTarget.classList.remove("dragging");
+  clearDropMarks();
+  dragCid=null;dragFromRid=null;
+}
+function clearDropMarks(){
+  document.querySelectorAll(".rt.dropon").forEach(x=>x.classList.remove("dropon"));
+  document.querySelectorAll("li.drop-before,li.drop-after").forEach(x=>x.classList.remove("drop-before","drop-after"));
+}
+function rtDragOver(e,rid){
+  if(!dragCid)return;
+  e.preventDefault();e.dataTransfer.dropEffect="move";
+  const card=e.currentTarget;
+  document.querySelectorAll(".rt.dropon").forEach(x=>{if(x!==card)x.classList.remove("dropon");});
+  card.classList.add("dropon");
+  document.querySelectorAll("li.drop-before,li.drop-after").forEach(x=>x.classList.remove("drop-before","drop-after"));
+  const li=e.target.closest?e.target.closest("li.clili"):null;
+  if(li){const rect=li.getBoundingClientRect();li.classList.add(e.clientY>rect.top+rect.height/2?"drop-after":"drop-before");}
+}
+function rtDragLeave(e){
+  if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove("dropon");
+}
+function rtDrop(e,rid){
+  e.preventDefault();
+  const cid=dragCid||((e.dataTransfer&&e.dataTransfer.getData("text/plain"))||null);
+  const from=dragFromRid;
+  clearDropMarks();
+  if(!cid)return;
+  const target=DB.rotas.find(x=>x.id===rid);if(!target)return;
+  let overId=null,after=false;
+  const li=e.target.closest?e.target.closest("li.clili"):null;
+  if(li&&li.dataset.cid){overId=li.dataset.cid;const rect=li.getBoundingClientRect();after=e.clientY>rect.top+rect.height/2;}
+  if(from){const src=DB.rotas.find(x=>x.id===from);if(src)src.ids=src.ids.filter(x=>x!==cid);}
+  target.ids=target.ids.filter(x=>x!==cid);
+  let idx=target.ids.length;
+  if(overId&&overId!==cid){const oi=target.ids.indexOf(overId);if(oi>=0)idx=after?oi+1:oi;}
+  target.ids.splice(idx,0,cid);
+  changed();renderRoteiro();
+}
+function delRota(id){const r=DB.rotas.find(x=>x.id===id);if(!r)return;if(!confirm("Excluir a rota \""+r.nome+"\"? (os clientes continuam na base)"))return;DB.rotas=DB.rotas.filter(x=>x.id!==id);changed();renderRoteiro();}
+function rmFromRota(rid,cid){const r=DB.rotas.find(x=>x.id===rid);if(!r)return;r.ids=r.ids.filter(x=>x!==cid);changed();renderRoteiro();if(selId===cid&&$("#drw").classList.contains("on"))openDrw(cid);}
+function addToRota(rid,cid){const r=DB.rotas.find(x=>x.id===rid);if(!r)return;if(!r.ids.includes(cid)){r.ids.push(cid);changed();}}
+/* reorganiza rotas agrupando por proximidade (cidade/zona), excluindo Sem interesse */
+function reorganizarRotas(){
+  if(!confirm("Reorganizar TODAS as rotas agrupando os clientes por cidade/zona (mais próximos juntos)?\n\n• Recria as rotas a partir dos clientes que já estão em alguma rota.\n• Clientes 'Sem interesse' ficam de fora.\n• Suas observações de rota atuais serão substituídas.\n\nDica: clique em Backup antes. Continuar?"))return;
+  const ids=[...new Set([].concat(...DB.rotas.map(r=>r.ids)))].filter(id=>{const c=getCli(id);return c&&statusOf(id)!=="Sem interesse";});
+  if(!ids.length){toast("Nenhum cliente nas rotas para organizar");return;}
+  const zonaDe=c=>(c.reg||c.cidade||"Sem zona");
+  const byFat=(a,b)=>((getCli(b).fat||0)-(getCli(a).fat||0));
+  const g30={},g60={};
+  ids.forEach(id=>{const c=getCli(id);const b=cicloDias(c)>=60?g60:g30;const z=zonaDe(c);(b[z]=b[z]||[]).push(id);});
+  const dias=["Ter","Qua","Qui"],MAX=5,novas=[];let ord=0,slot=0;
+  const mk=(reg,sem,dia,chunk,is60)=>novas.push({id:"R"+Date.now().toString(36)+ord,nome:"S"+sem+" "+dia+" — "+reg+(is60?" (60d)":""),reg,dia,sem,obs:is60?"Interior (ciclo 60d) — agrupado por cidade":"Agrupado por zona (proximidade)",ids:chunk,ord:ord++});
+  Object.keys(g30).sort().forEach(z=>{const arr=g30[z].sort(byFat);for(let i=0;i<arr.length;i+=MAX){const sem=Math.floor(slot/dias.length)%4+1,dia=dias[slot%dias.length];mk(z,sem,dia,arr.slice(i,i+MAX),false);slot++;}});
+  let s60=0;Object.keys(g60).sort().forEach(z=>{const arr=g60[z].sort(byFat);for(let i=0;i<arr.length;i+=MAX+1){const dia=dias[s60%dias.length];mk(z,4,dia,arr.slice(i,i+MAX+1),true);s60++;}});
+  DB.rotas=novas;changed();renderRoteiro();toast("Reorganizado: "+novas.length+" rotas por proximidade");
+}
+
+/* picker para adicionar cliente a uma rota */
+function addToRotaPick(rid){
+  selPickRid=rid;
+  openPicker();
+}
+let selPickRid=null;
+function openPicker(){
+  const r=DB.rotas.find(x=>x.id===selPickRid);
+  $("#drw").innerHTML=`<div class="dh"><button class="x" onclick="closeDrw()">×</button><h2>Adicionar à rota</h2><div style="font-size:12px;opacity:.9">${esc(r?r.nome:"")}</div></div>`+
+    `<div class="bd"><div class="fld"><input type="text" id="pkq" placeholder="Buscar cliente..." oninput="renderPick()"></div><div id="pklist"></div></div>`;
+  showDrw();renderPick();$("#pkq").focus();
+}
+function renderPick(){
+  const q=norm($("#pkq").value);const r=DB.rotas.find(x=>x.id===selPickRid);const has=r?r.ids:[];
+  let l=CLI.filter(c=>!has.includes(c.id));
+  if(q)l=l.filter(c=>norm(c.nome).includes(q)||norm(c.cidade).includes(q));
+  l=l.slice(0,60);
+  let h=l.map(c=>`<li style="display:flex;gap:8px;align-items:center;padding:8px 4px;border-top:1px solid #f1f4f8"><span class="chip ${c.tipo==='ativo'?'act':c.tipo==='prospect'?'pro':''}">${c.tipo}</span><span style="flex:1;font-size:13px">${esc(c.nome)}<br><span class="sub" style="color:var(--mut);font-size:11px">${esc(c.cidade||"")} · ${esc(c.reg||"")}</span></span><button class="btn sm" onclick="pickAdd('${c.id}')">+</button></li>`).join("");
+  $("#pklist").innerHTML="<ul style='list-style:none;margin:0;padding:0'>"+(h||"<li class='empty'>Nada encontrado</li>")+"</ul>";
+}
+function pickAdd(cid){addToRota(selPickRid,cid);toast("Adicionado à rota");renderPick();renderRoteiroBg();}
+function renderRoteiroBg(){if(view==="roteiro"){/* re-render atrás do drawer mantendo picker */}}
+
+/* ----- agendar a ROTA INTEIRA num dia ----- */
+let selAgRid=null;
+function openAgendaRota(rid){
+  selAgRid=rid;
+  const r=DB.rotas.find(x=>x.id===rid);if(!r)return;
+  const clis=r.ids.map(id=>getCli(id)).filter(Boolean);
+  let h=`<div class="dh"><button class="x" onclick="closeDrw()">×</button><h2>Agendar rota inteira</h2>`+
+    `<div style="font-size:12px;opacity:.9">${esc(r.reg||r.nome)} · ${clis.length} cliente(s)</div></div>`+
+    `<div class="bd"><div class="sec">`+
+    `<div class="row2">`+
+      `<div class="fld"><label>Dia da visita</label><input type="date" id="arData" value="${r.dataAg||todayISO()}"></div>`+
+      `<div class="fld"><label>Hora de início</label><input type="time" id="arHora" value="${r.horaAg||'08:00'}"></div>`+
+    `</div>`+
+    `<label style="font-size:13px;display:flex;gap:6px;align-items:center;margin-top:2px"><input type="checkbox" id="arCada" checked> Agendar também cada cliente da rota nessa data (status → Agendado)</label>`+
+    `<div style="margin-top:12px"><button class="btn" onclick="salvarAgendaRota()">Salvar + Google Agenda</button>`+
+    (r.dataAg?` <button class="btn gh sm" style="margin-left:6px" onclick="limparAgendaRota('${rid}')">Limpar agendamento</button>`:"")+
+    `</div></div>`;
+  if(clis.length)h+=`<div class="sec"><h4>Clientes desta rota (ordem da visita)</h4>`+
+    clis.map((c,i)=>`<div class="hist"><b>${i+1}. ${esc(c.nome)}</b> <span class="sub" style="color:var(--mut)">${esc(c.cidade||"")}</span></div>`).join("")+`</div>`;
+  h+=`</div>`;
+  $("#drw").innerHTML=h;showDrw();
+}
+function salvarAgendaRota(){
+  const r=DB.rotas.find(x=>x.id===selAgRid);if(!r)return;
+  const data=$("#arData").value,hora=$("#arHora").value||"08:00",cada=$("#arCada").checked;
+  if(!data){toast("Escolha o dia");return;}
+  const dAnt=r.dataAg;
+  r.dataAg=data;r.horaAg=hora;
+  if(cada){
+    if(!DB.ag)DB.ag=[];
+    r.ids.forEach((id,i)=>{
+      const o=ov(id);o.status="Agendado";o.prox=data;
+      if(!DB.ag.some(a=>a.cid===id&&a.data===data&&a.rota===r.id))
+        DB.ag.push({id:"G"+Date.now().toString(36)+i,cid:id,data,hora,obs:"Rota: "+(r.reg||r.nome),rota:r.id,cri:Date.now()});
+    });
+  }
+  changed();
+  window.open(gcalRotaUrl(r),"_blank");
+  toast("Rota agendada para "+fmtD(data));
+  closeDrw();renderRoteiro();
+}
+function limparAgendaRota(rid){
+  const r=DB.rotas.find(x=>x.id===rid);if(!r)return;
+  if(!confirm("Remover o agendamento desta rota?\n(os agendamentos criados para os clientes nessa data também são removidos)"))return;
+  const d=r.dataAg;
+  if(d&&DB.ag)DB.ag=DB.ag.filter(a=>!(a.rota===r.id&&a.data===d));
+  delete r.dataAg;delete r.horaAg;
+  changed();closeDrw();renderRoteiro();toast("Agendamento removido");
+}
+function gcalRotaUrl(r){
+  const p=n=>String(n).padStart(2,"0");
+  const d=new Date(r.dataAg+"T"+((r.horaAg||"08:00"))+":00");
+  const e=new Date(d.getTime()+4*36e5);
+  const fmt=x=>x.getFullYear()+p(x.getMonth()+1)+p(x.getDate())+"T"+p(x.getHours())+p(x.getMinutes())+"00";
+  const dates=fmt(d)+"/"+fmt(e);
+  const stops=r.ids.map(id=>getCli(id)).filter(Boolean);
+  let det="Rota CHR: "+(r.reg||r.nome);
+  if(r.obs)det+="\\n"+r.obs;
+  det+="\\n\\n"+stops.length+" cliente(s):\\n"+stops.map((c,i)=>(i+1)+". "+c.nome+(c.cidade?" — "+c.cidade:"")).join("\\n");
+  det+="\\n\\nMapa da rota: "+mapsRotaUrl(r);
+  let u="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent("Rota: "+(r.reg||r.nome));
+  u+="&dates="+dates+"&details="+encodeURIComponent(det);
+  if(stops[0]&&stops[0].cidade)u+="&location="+encodeURIComponent(stops[0].cidade);
+  return u;
+}
+
+/* ======================= CLIENTES ======================= */
+let fq="",fTipo="",fReg="",fCiclo="",fSeg="",fMarca="",fStatus="",fAg=false;
+function renderClientes(){
+  const regs=[...new Set(CLI.map(c=>c.reg).filter(Boolean))].sort();
+  const segs=[...new Set(CLI.map(c=>c.seg).filter(Boolean))].sort();
+  let h='<div class="bar">'+
+    `<input type="text" placeholder="Buscar nome ou cidade..." value="${esc(fq)}" oninput="fq=this.value;renderClientes()">`+
+    sel("fTipo",fTipo,["ativo","prospect","custom"],"Tipo")+
+    sel("fReg",fReg,regs,"Região")+
+    sel("fCiclo",fCiclo,["30d","60d"],"Ciclo")+
+    sel("fSeg",fSeg,segs,"Segmento")+
+    sel("fMarca",fMarca,["VONDER","LAHUMAN","MACCAFERRI","NEWFIX","MULTIFITAS"],"Marca-foco")+
+    sel("fStatus",fStatus,STATUS,"Status")+
+    `<label style="font-size:12px;display:flex;gap:5px;align-items:center"><input type="checkbox" ${fAg?"checked":""} onchange="fAg=this.checked;renderClientes()">só agendamento</label>`+
+    '<button class="btn" onclick="newCli()">+ Cliente</button>'+
+    '</div>';
+  let l=filterCli();
+  l.sort((a,b)=>{let x=a[sortK],y=b[sortK];if(typeof x==="string"){x=norm(x);y=norm(y);}return (x>y?1:x<y?-1:0)*sortDir;});
+  h+=`<div style="font-size:12px;color:var(--mut);margin-bottom:6px">${l.length} clientes</div>`;
+  h+='<div style="overflow-x:auto"><table><thead><tr>'+
+     th("nome","Cliente")+th("cidade","Cidade")+th("reg","Região")+th("ciclo","Ciclo")+th("seg","Segmento")+
+     th("fat","Fat. 2025")+'<th>Status</th></tr></thead><tbody>';
+  l.forEach(c=>{
+    const o=DB.ov[c.id]||{}; const st=statusOf(c.id);
+    h+=`<tr onclick="openDrw('${c.id}')"><td><b>${esc(c.nome)}</b> ${tipoChip(c)}${o.soAg?' <span class="chip ag">agendar</span>':""}${isAlerta(c)?' <span class="chip al">alerta</span>':""}</td>`+
+       `<td>${esc(c.cidade||"")}</td><td>${esc(c.reg||"")}</td><td>${c.ciclo?`<span class="chip c30">${c.ciclo}</span>`:""}</td>`+
+       `<td>${esc(c.seg||"")}</td><td class="num">${money(c.fat)}</td><td><span class="chip ${statusCls(st)}">${esc(st)}</span></td></tr>`;
+  });
+  h+="</tbody></table></div>";
+  $("#main").innerHTML=h;
+}
+function filterCli(){
+  let l=CLI.slice();
+  if(fq){const q=norm(fq);l=l.filter(c=>norm(c.nome).includes(q)||norm(c.cidade).includes(q));}
+  if(fTipo)l=l.filter(c=>c.tipo===fTipo);
+  if(fReg)l=l.filter(c=>c.reg===fReg);
+  if(fCiclo)l=l.filter(c=>c.ciclo===fCiclo);
+  if(fSeg)l=l.filter(c=>c.seg===fSeg);
+  if(fMarca)l=l.filter(c=>(c.marca===fMarca)||((c.mix||"").toUpperCase().includes(fMarca.slice(0,5))));
+  if(fStatus)l=l.filter(c=>statusOf(c.id)===fStatus);
+  if(fAg)l=l.filter(c=>(DB.ov[c.id]||{}).soAg);
+  return l;
+}
+function sel(name,val,opts,ph){return `<select onchange="${name}=this.value;renderClientes()"><option value="">${ph}</option>`+opts.map(o=>`<option ${val===o?"selected":""}>${esc(o)}</option>`).join("")+"</select>";}
+function th(k,lb){const a=sortK===k?(sortDir<0?" ↓":" ↑"):"";return `<th onclick="setSort('${k}')">${lb}${a}</th>`;}
+function setSort(k){if(sortK===k)sortDir*=-1;else{sortK=k;sortDir=1;}renderClientes();}
+function tipoChip(c){return `<span class="chip ${c.tipo==='ativo'?'act':c.tipo==='prospect'?'pro':''}">${c.tipo}</span>`;}
+function newCli(){
+  const nome=prompt("Nome do novo cliente:");if(!nome)return;
+  const cidade=prompt("Cidade:","")||"";const reg=prompt("Região/praça:","")||"";const seg=prompt("Segmento:","")||"";
+  const id="C"+Date.now().toString(36);
+  DB.custom.push({id,nome:nome.trim(),cidade:cidade.trim(),reg:reg.trim(),ciclo:"",seg:seg.trim()});
+  changed();rebuild();renderClientes();toast("Cliente criado");
+}
+
+/* ======================= DRAWER (detalhe) ======================= */
+function showDrw(){$("#ov").classList.add("on");$("#drw").classList.add("on");}
+function closeDrw(){$("#ov").classList.remove("on");$("#drw").classList.remove("on");selId=null;selPickRid=null;selAgRid=null;}
+function openDrw(id,focus){
+  selId=id;const c=getCli(id);if(!c)return;const o=ov(id);
+  const st=statusOf(id);
+  let h=`<div class="dh"><button class="x" onclick="closeDrw()">×</button><h2>${esc(c.nome)}</h2>`+
+    `<div style="margin-top:6px">${tipoChip(c)} <span class="chip ${statusCls(st)}">${esc(st)}</span> ${c.reg?`<span class="chip" style="background:rgba(255,255,255,.2);color:#fff">${esc(c.reg)}</span>`:""} ${c.ciclo?`<span class="chip" style="background:rgba(255,255,255,.2);color:#fff">${esc(c.ciclo)}</span>`:""}</div></div>`;
+  h+='<div class="bd">';
+  // info
+  h+='<div class="sec"><div class="meta">';
+  if(c.cidade)h+=`<b>Cidade:</b> ${esc(c.cidade)}<br>`;
+  if(c.seg)h+=`<b>Segmento:</b> ${esc(c.seg)}<br>`;
+  if(c.tipo==="ativo"){h+=`<b>Fat. 2025:</b> ${money(c.fat)} &nbsp; <b>Meses:</b> ${c.meses||0}/12 &nbsp; <b>Últ.:</b> mês ${c.ultMes||"—"}<br>`;if(c.mix)h+=`<b>Mix atual:</b> ${esc(c.mix)}<br>`;}
+  if(c.marca)h+=`<b>Marca-foco:</b> ${esc(c.marca)}<br>`;
+  if(c.foco)h+=`<b>Foco:</b> ${esc(c.foco)}`;
+  h+='</div></div>';
+  // links rapidos
+  const fone=(o.fone||"").replace(/\D/g,"");
+  const wa=fone?`<a class="lk" target="_blank" href="https://wa.me/55${fone}">💬 WhatsApp</a>`:"";
+  const maps=`<a class="lk" target="_blank" href="${mapsCliUrl(c)}">📍 Mapa</a>`;
+  h+=`<div class="sec">${wa}${maps}</div>`;
+  // controles
+  h+='<div class="sec"><h4>Acompanhamento</h4>';
+  h+='<div class="row2">'+
+     `<div class="fld"><label>Status</label><select onchange="setOv('${id}','status',this.value)"><option value="">⟳ Automático — ${esc(autoStatus(id))}</option>${STATUS.map(s=>`<option ${(o.status||"")===s?"selected":""}>${s}</option>`).join("")}</select></div>`+
+     `<div class="fld"><label>Prioridade</label><select onchange="setOv('${id}','prio',this.value)"><option value="">—</option>${PRIOS.map(p=>`<option ${o.prio===p?"selected":""}>${p}</option>`).join("")}</select></div>`+
+     '</div>';
+  h+='<div class="row2">'+
+     `<div class="fld"><label>Próxima visita</label><input type="date" value="${o.prox||""}" onchange="setOv('${id}','prox',this.value)"></div>`+
+     `<div class="fld"><label>Telefone (WhatsApp)</label><input type="text" value="${esc(o.fone||"")}" placeholder="62 99999-9999" onchange="setOv('${id}','fone',this.value)"></div>`+
+     '</div>';
+  h+=`<label style="font-size:13px;display:flex;gap:6px;align-items:center;margin-top:2px"><input type="checkbox" ${o.soAg?"checked":""} onchange="setOv('${id}','soAg',this.checked)"> Atende somente com agendamento</label>`;
+  // adicionar a rota
+  h+='<div class="fld" style="margin-top:10px"><label>Adicionar a uma rota</label><select onchange="if(this.value){addToRota(this.value,\''+id+'\');toast(\'Adicionado\');openDrw(\''+id+'\');}"><option value="">Escolher rota...</option>'+DB.rotas.map(r=>`<option value="${r.id}" ${r.ids.includes(id)?"disabled":""}>${esc(r.nome)}${r.ids.includes(id)?" (já está)":""}</option>`).join("")+'</select></div>';
+  // rotas que ja contem
+  const inR=DB.rotas.filter(r=>r.ids.includes(id));
+  if(inR.length)h+='<div class="meta" style="margin-top:4px"><b>Nas rotas:</b> '+inR.map(r=>`${esc(r.nome)} <a href="#" onclick="rmFromRota('${r.id}','${id}');return false" style="color:var(--red)">✖</a>`).join(" · ")+'</div>';
+  h+='</div>';
+  // vínculo com a carteira Master / Atacados
+  const lk=o.link||{};
+  h+='<div class="sec"><h4>🔗 Vínculo com a carteira</h4>';
+  if(lk.q)h+=`<div class="meta" style="margin-bottom:8px">Vinculado a <b>${esc(lk.q)}</b> na carteira <b>${lk.panel==="atacados"?"Atacados":"Master"}</b> `+
+     `<button class="btn sm" style="margin-left:6px" onclick="openVinculo('${id}')">Abrir cadastro ↗</button> `+
+     `<button class="ic" title="Remover vínculo" onclick="setOv('${id}','link',null)">✖</button></div>`;
+  else h+='<p class="empty" style="margin-bottom:8px">Sem vínculo. Conecte este cliente ao cadastro já existente na carteira Master ou de Atacados (centraliza informações).</p>';
+  h+='<div class="row2">'+
+     `<div class="fld"><label>Carteira</label><select id="lkPanel"><option value="carteira" ${lk.panel!=="atacados"?"selected":""}>Master</option><option value="atacados" ${lk.panel==="atacados"?"selected":""}>Atacados</option></select></div>`+
+     `<div class="fld"><label>Cliente (nome ou CNPJ)</label><input type="text" id="lkQ" value="${esc(lk.q||c.nome||"")}" placeholder="ex.: COMIGO"></div>`+
+     '</div>'+
+     `<button class="btn gh sm" onclick="salvarVinculo('${id}')">Salvar vínculo</button>`;
+  h+='</div>';
+  // agendamento
+  h+='<div class="sec" id="secAg"><h4>Agendar visita</h4>'+
+     '<div class="row2">'+
+     `<div class="fld"><label>Data</label><input type="date" id="agd" value="${todayISO()}"></div>`+
+     `<div class="fld"><label>Hora</label><input type="time" id="agh" value="09:00"></div>`+
+     '</div>'+
+     `<div class="fld"><label>Observação</label><input type="text" id="ago" placeholder="ex.: levar catálogo Vonder"></div>`+
+     `<button class="btn" onclick="agendar('${id}')">Salvar + Google Agenda</button>`;
+  const ags=(DB.ag||[]).filter(a=>a.cid===id).sort((a,b)=>(a.data+a.hora<b.data+b.hora?1:-1));
+  if(ags.length){h+='<div style="margin-top:10px">'+ags.map(a=>`<div class="hist"><div class="t"><span>${fmtD(a.data)} ${esc(a.hora||"")}</span><span><a target="_blank" href="${gcalUrl(c,a)}">Google ↗</a> &nbsp;<a href="#" onclick="delAg('${a.id}');return false" style="color:var(--red)">✖</a></span></div>${esc(a.obs||"Visita agendada")}</div>`).join("")+'</div>';}
+  h+='</div>';
+  // visitas
+  h+='<div class="sec"><h4>Registrar visita</h4>'+
+     `<div class="fld"><select id="visRes"><option value="Visitado">Visitei</option><option value="Pedido">Fechei pedido</option><option value="Sem sucesso">Sem sucesso</option><option value="Não encontrado">Não encontrado</option></select></div>`+
+     `<div class="fld"><textarea id="visObs" placeholder="O que rolou na visita..."></textarea></div>`+
+     `<button class="btn gh" onclick="registrarVisita('${id}')">Registrar visita</button>`;
+  const vis=(o.vis||[]).slice().reverse();
+  if(vis.length)h+='<div style="margin-top:10px">'+vis.map((v,i)=>{const ri=o.vis.length-1-i;return `<div class="hist"><div class="t"><span>${fmtTS(v.t)} · ${esc(v.res||"")}</span><span><a href="#" title="Editar" onclick="editVis('${id}',${ri});return false">✎</a> &nbsp;<a href="#" title="Excluir" onclick="delVis('${id}',${ri});return false" style="color:var(--red)">✖</a></span></div>${esc(v.x||"")}</div>`;}).join("")+'</div>';
+  h+='</div>';
+  // arquivos do cliente (pasta compactada)
+  h+='<div class="sec"><h4>📁 Arquivos de '+esc(c.nome)+'</h4>'+
+     '<input type="file" id="fileIn" onchange="addFile(\''+id+'\',this)" style="font-size:12px">';
+  const files=(o.files||[]);
+  if(files.length)h+='<div style="margin-top:8px">'+files.map((fl,i)=>`<div class="hist"><div class="t"><span>📄 ${esc(fl.name)} · ${(fl.size/1024).toFixed(0)} KB${fl.gz?" · zip":""}</span><span><a href="#" title="Baixar" onclick="dlFile('${id}',${i});return false">⬇</a> &nbsp;<a href="#" title="Excluir" onclick="delFile('${id}',${i});return false" style="color:var(--red)">✖</a></span></div></div>`).join("")+'</div>';
+  else h+='<p class="empty" style="margin-top:6px">Pasta vazia. Anexe fotos, PDFs, pedidos…</p>';
+  h+='</div>';
+  // observacoes (historico que vira base de dados)
+  h+='<div class="sec" id="secObs"><h4>Observações (histórico)</h4>'+
+     `<div class="fld"><textarea id="obsNew" placeholder="Anote algo sobre este cliente..."></textarea></div>`+
+     `<button class="btn" onclick="addObs('${id}')">Adicionar observação</button>`;
+  const obs=(o.obs||[]).slice().reverse();
+  if(obs.length)h+='<div style="margin-top:10px">'+obs.map((b,i)=>`<div class="hist"><div class="t"><span>${fmtTS(b.t)}</span><a href="#" onclick="delObs('${id}',${o.obs.length-1-i});return false" style="color:var(--red)">✖</a></div>${esc(b.x)}</div>`).join("")+'</div>';
+  else h+='<p class="empty" style="margin-top:8px">Sem observações ainda.</p>';
+  h+='</div>';
+  // perigo
+  h+='<div class="sec">'+
+     '<button class="btn gh sm" onclick="rmFromAllRotas(\''+id+'\')">Remover de todas as rotas</button> '+
+     (c.tipo==="custom"?'<button class="btn dng sm" onclick="delCli(\''+id+'\')">Excluir cliente</button>':"")+
+     '</div>';
+  h+='</div>';
+  $("#drw").innerHTML=h;showDrw();
+  if(focus==="obs")setTimeout(()=>{const e=$("#obsNew");if(e){e.scrollIntoView();e.focus();}},60);
+  if(focus==="ag")setTimeout(()=>{const e=$("#secAg");if(e)e.scrollIntoView();},60);
+}
+function setOv(id,k,v){ov(id)[k]=v;changed();if(view==="roteiro")renderRoteiro();else if(view==="clientes")renderClientes();}
+function addObs(id){const e=$("#obsNew");const x=e.value.trim();if(!x){toast("Escreva algo");return;}const o=ov(id);if(!o.obs)o.obs=[];o.obs.push({t:Date.now(),x});changed();openDrw(id,"obs");toast("Observação salva");}
+function delObs(id,idx){const o=ov(id);if(o.obs){o.obs.splice(idx,1);changed();openDrw(id,"obs");}}
+function registrarVisita(id){const res=$("#visRes").value;const x=$("#visObs").value.trim();const o=ov(id);if(!o.vis)o.vis=[];o.vis.push({t:Date.now(),res,x});if(res==="Visitado"||res==="Pedido")o.status="Visitado";changed();openDrw(id);toast("Visita registrada");}
+function editVis(id,idx){const o=ov(id);const v=o.vis&&o.vis[idx];if(!v)return;const res=prompt("Resultado (Visitado / Pedido / Sem sucesso / Não encontrado):",v.res||"Visitado");if(res===null)return;const x=prompt("Descrição da visita:",v.x||"");if(x===null)return;v.res=res.trim();v.x=x.trim();changed();openDrw(id);toast("Visita atualizada");}
+function delVis(id,idx){if(!confirm("Excluir esta visita?"))return;const o=ov(id);if(o.vis){o.vis.splice(idx,1);changed();openDrw(id);toast("Visita excluída");}}
+function abToB64(ab){let b="";const u=new Uint8Array(ab),ch=0x8000;for(let i=0;i<u.length;i+=ch)b+=String.fromCharCode.apply(null,u.subarray(i,i+ch));return btoa(b);}
+function b64ToU8(b64){const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
+async function gz(buf){if(self.CompressionStream){const s=new Blob([buf]).stream().pipeThrough(new CompressionStream("gzip"));return {gz:true,data:abToB64(await new Response(s).arrayBuffer())};}return {gz:false,data:abToB64(buf)};}
+async function gunz(rec){const u=b64ToU8(rec.data);if(rec.gz&&self.DecompressionStream){const s=new Blob([u]).stream().pipeThrough(new DecompressionStream("gzip"));return await new Response(s).arrayBuffer();}return u.buffer;}
+async function addFile(id,inp){const f=inp.files[0];if(!f)return;if(f.size>5*1048576&&!confirm("Arquivo de "+(f.size/1048576).toFixed(1)+" MB. Arquivos grandes deixam a sincronização lenta. Continuar?")){inp.value="";return;}try{const z=await gz(await f.arrayBuffer());const o=ov(id);if(!o.files)o.files=[];o.files.push({name:f.name,type:f.type||"application/octet-stream",size:f.size,gz:z.gz,data:z.data,t:Date.now()});changed();openDrw(id);toast("Arquivo anexado");}catch(e){toast("Falha ao anexar");}inp.value="";}
+async function dlFile(id,idx){const o=ov(id);const rec=o.files&&o.files[idx];if(!rec)return;try{const ab=await gunz(rec);const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([ab],{type:rec.type}));a.download=rec.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);}catch(e){toast("Falha ao baixar");}}
+function delFile(id,idx){if(!confirm("Excluir este arquivo?"))return;const o=ov(id);if(o.files){o.files.splice(idx,1);changed();openDrw(id);toast("Arquivo excluído");}}
+function rmFromAllRotas(id){DB.rotas.forEach(r=>r.ids=r.ids.filter(x=>x!==id));changed();openDrw(id);toast("Removido das rotas");}
+/* vínculo com a carteira master / atacados */
+function salvarVinculo(id){const panel=$("#lkPanel").value;const q=$("#lkQ").value.trim();if(!q){toast("Informe o cliente");return;}ov(id).link={panel,q};changed();openDrw(id);toast("Vínculo salvo");}
+function openVinculo(id){const lk=(DB.ov[id]||{}).link;if(!lk||!lk.q)return;const file=lk.panel==="atacados"?"atacados.html":"carteira.html";window.open(file+"?busca="+encodeURIComponent(lk.q),"_blank");}
+function delCli(id){if(!confirm("Excluir este cliente da base?"))return;DB.custom=DB.custom.filter(c=>c.id!==id);DB.rotas.forEach(r=>r.ids=r.ids.filter(x=>x!==id));delete DB.ov[id];changed();rebuild();closeDrw();render();}
+
+/* agendamento + Google Agenda */
+function agendar(id){
+  const data=$("#agd").value,hora=$("#agh").value,obs=$("#ago").value.trim();
+  if(!data){toast("Escolha a data");return;}
+  const a={id:"G"+Date.now().toString(36),cid:id,data,hora,obs,cri:Date.now()};
+  if(!DB.ag)DB.ag=[];DB.ag.push(a);
+  const o=ov(id);o.status="Agendado";o.prox=data;
+  changed();
+  window.open(gcalUrl(getCli(id),a),"_blank");
+  openDrw(id,"ag");toast("Agendado");
+}
+function delAg(aid){DB.ag=DB.ag.filter(a=>a.id!==aid);changed();if(selId)openDrw(selId,"ag");}
+function mapsCliUrl(c){return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(((c&&c.nome)||"")+" "+((c&&c.cidade)||"")+" GO");}
+function mapsRotaUrl(r){
+  const stops=r.ids.map(id=>getCli(id)).filter(Boolean).map(c=>encodeURIComponent((c.nome||"")+", "+(c.cidade||"")+", GO"));
+  if(!stops.length)return "https://www.google.com/maps";
+  return "https://www.google.com/maps/dir/"+stops.join("/");
+}
+function gcalUrl(c,a){
+  const p=n=>String(n).padStart(2,"0");
+  const d=new Date(a.data+"T"+((a.hora||"09:00"))+":00");
+  const e=new Date(d.getTime()+36e5);
+  const fmt=x=>x.getFullYear()+p(x.getMonth()+1)+p(x.getDate())+"T"+p(x.getHours())+p(x.getMinutes())+"00";
+  const dates=fmt(d)+"/"+fmt(e);
+  let det=(a.obs||"Visita comercial CHR");
+  if(c){det+="\\nCliente: "+c.nome;if(c.foco)det+="\\nFoco: "+c.foco;if(c.mix)det+="\\nMix: "+c.mix;}
+  let u="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent("Visita: "+(c?c.nome:""));
+  u+="&dates="+dates+"&details="+encodeURIComponent(det);
+  if(c&&c.cidade)u+="&location="+encodeURIComponent(c.cidade);
+  return u;
+}
+
+/* ======================= PAINEL ======================= */
+function renderPainel(){
+  const ativos=CLI.filter(c=>c.tipo==="ativo").length;
+  const prosp=CLI.filter(c=>c.tipo==="prospect").length;
+  const emRota=new Set([].concat(...DB.rotas.map(r=>r.ids))).size;
+  const agPend=(DB.ag||[]).filter(a=>a.data>=todayISO()).length;
+  const soAg=Object.values(DB.ov).filter(o=>o.soAg).length;
+  const visMes=(()=>{let n=0;const m=new Date();Object.values(DB.ov).forEach(o=>(o.vis||[]).forEach(v=>{const d=new Date(v.t);if(d.getMonth()===m.getMonth()&&d.getFullYear()===m.getFullYear())n++;}));return n;})();
+  let h='<div class="kpis">'+
+    kpi(CLI.length,"Clientes na base")+kpi(ativos,"Ativos")+kpi(prosp,"Prospects")+
+    kpi(emRota,"Em rotas")+kpi(agPend,"Agendamentos futuros")+kpi(visMes,"Visitas no mês")+kpi(soAg,"Só agendamento")+
+    '</div>';
+  // alertas
+  const al=CLI.filter(isAlerta).sort((a,b)=>b.fat-a.fat);
+  h+='<div class="panel"><h3>⚠️ Clientes que pedem atenção ('+al.length+')</h3>';
+  if(al.length)h+='<div style="overflow-x:auto"><table><thead><tr><th>Cliente</th><th>Cidade</th><th>Fat. 2025</th><th>Foco</th></tr></thead><tbody>'+
+    al.slice(0,25).map(c=>`<tr onclick="go('clientes');setTimeout(()=>openDrw('${c.id}'),50)"><td><b>${esc(c.nome)}</b></td><td>${esc(c.cidade||"")}</td><td class="num">${money(c.fat)}</td><td>${esc(c.foco||"")}</td></tr>`).join("")+'</tbody></table></div>';
+  else h+='<p class="empty">Tudo em dia.</p>';
+  h+='</div>';
+  // proximas visitas
+  const prox=CLI.map(c=>({c,o:DB.ov[c.id]||{}})).filter(x=>x.o.prox).sort((a,b)=>a.o.prox<b.o.prox?-1:1);
+  h+='<div class="panel"><h3>📅 Próximas visitas</h3>';
+  if(prox.length)h+=prox.slice(0,20).map(x=>{const late=x.o.prox<todayISO()&&statusOf(x.c.id)!=="Visitado";return `<div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid #f1f4f8"><span class="chip ${late?'al':'c30'}">${fmtD(x.o.prox)}</span><span style="flex:1;cursor:pointer" onclick="openDrw('${x.c.id}')">${esc(x.c.nome)} <span class="sub" style="color:var(--mut);font-size:11px">${esc(x.c.cidade||"")}</span></span><span class="chip">${esc(statusOf(x.c.id))}</span></div>`;}).join("");
+  else h+='<p class="empty">Nenhuma visita marcada. Use "Próxima visita" ou "Agendar" na ficha do cliente.</p>';
+  h+='</div>';
+  // por regiao
+  const byReg={};CLI.forEach(c=>{if(!c.reg)return;byReg[c.reg]=(byReg[c.reg]||0)+1;});
+  const regArr=Object.entries(byReg).sort((a,b)=>b[1]-a[1]);const mx=Math.max(1,...regArr.map(r=>r[1]));
+  h+='<div class="panel"><h3>Clientes por região</h3><div class="bars">'+regArr.map(([r,n])=>`<div><div class="lb"><span>${esc(r)}</span><span>${n}</span></div><div class="tr"><div class="fl" style="width:${n/mx*100}%"></div></div></div>`).join("")+'</div></div>';
+  // capacidade
+  const cap=SEED.cap;const capMes=cap.visDia*cap.diasSem*cap.semMes;
+  h+='<div class="panel"><h3>Capacidade x Demanda (referência da planilha)</h3>'+
+     `<div class="meta"><b>Capacidade:</b> ${cap.visDia} visitas/dia × ${cap.diasSem} dias (Ter-Qui) × ${cap.semMes} semanas = <b>~${capMes} visitas/mês</b><br>`+
+     `<b>Demanda mensal:</b> ~${cap.demanda} (ativos 30d: ${cap.ativos30}, prospecções 30d: ${cap.prosp30}, ativos 60d: ${cap.ativos60}, prospecções 60d: ${cap.prosp60})<br>`+
+     `<b>Leitura:</b> a demanda supera a capacidade — priorize ativos 30d e contas-chave; encaixe 1-2 prospecções na mesma rota; interior (60d) consome 1 semana/mês (alterne regiões).</div></div>`;
+  // criterio de status
+  const stCount={};CLI.forEach(c=>{const s=statusOf(c.id);stCount[s]=(stCount[s]||0)+1;});
+  h+='<div class="panel"><h3>Status dos clientes — como é calculado</h3>'+
+     '<div style="margin-bottom:10px">'+STATUS.map(s=>`<span class="chip ${statusCls(s)}" style="margin-right:6px">${s}: ${stCount[s]||0}</span>`).join("")+'</div>'+
+     '<div class="meta" style="font-size:12px;line-height:1.8">'+
+     'O status é <b>automático e contínuo</b> (dá pra fixar manualmente na ficha; escolha "⟳ Automático" para voltar ao cálculo):<br>'+
+     '• <b>Agendado</b> — existe visita marcada para data futura.<br>'+
+     '• <b>Visitado</b> — última visita dentro do ciclo do cliente (30 ou 60 dias).<br>'+
+     '• <b>A visitar</b> — o ciclo venceu (mais de 1 ciclo desde a última visita) ou cliente ainda sem visita.<br>'+
+     '• <b>Reativar</b> — mais de 2 ciclos sem visita, ou marcado como ALERTA, ou ativo com ≤3 meses de compra em 2025.<br>'+
+     '• <b>Sem interesse</b> — definido por você; fica de fora da organização das próximas rotas.</div></div>';
+  $("#main").innerHTML=h;
+}
+function kpi(v,l){return `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`;}
+
+/* ======================= backup ======================= */
+function exportJSON(){const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="rotas_chr_"+todayISO()+".json";a.click();}
+function importJSON(inp){const f=inp.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{DB=migrate(JSON.parse(rd.result));changed();rebuild();render();toast("Importado");}catch(e){toast("Arquivo inválido");}};rd.readAsText(f);inp.value="";}
+
+/* abre a ficha de um cliente vindo de outra tela (ex.: botão "Rotas" da Carteira Master -> rotas.html?cli=NOME) */
+function findByName(q){if(!q)return null;const n=norm(q);return CLI.find(c=>norm(c.nome)===n)||CLI.find(c=>norm(c.nome).includes(n))||CLI.find(c=>norm(c.nome).length>4&&n.includes(norm(c.nome)))||null;}
+function openFromQuery(){
+  try{
+    const p=new URLSearchParams(location.search);
+    const q=p.get("cli")||p.get("cliente")||p.get("busca")||p.get("q");
+    if(!q)return;
+    const m=findByName(q);
+    if(m){go("clientes");openDrw(m.id);}
+    else{go("clientes");fq=q;renderClientes();toast('Cliente "'+q+'" nao esta na base de rotas - busque ou adicione.');}
+  }catch(e){}
+}
+/* ======================= boot ======================= */
+function boot(){
+  try{const raw=localStorage.getItem(STORE_KEY);if(raw)DB=migrate(JSON.parse(raw));}catch(e){}
+  if(!DB)DB=blankDB();
+  seedRotas();rebuild();render();setSync("off");
+  initSync();
+  openFromQuery();
+}
+window.addEventListener("chr-auth",initSync);
+if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot);
+</script>
+</body>
+</html>
