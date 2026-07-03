@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHR — Gestão Financeira</title>
+<script src="gate.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  *{box-sizing:border-box}html,body{margin:0;min-height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#eef2f6;color:#1f2a37}
+  header{background:linear-gradient(135deg,#1f5fae,#16467f);color:#fff;padding:20px 24px 0;position:sticky;top:0;z-index:50;box-shadow:0 2px 14px rgba(16,24,40,.12)}
+  .htop{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .htop .back{color:#dbe7fb;text-decoration:none;font-size:13px;font-weight:600}
+  header h1{margin:0;font-size:20px;font-weight:800;flex:1}
+  .syncbadge{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.18);color:#eaf2ff}
+  .syncbadge.ok{background:#16a34a}.syncbadge.saving{background:#d97706}.syncbadge.err{background:#dc2626}.syncbadge.off{background:#64748b}
+  .tabs{display:flex;gap:4px;margin-top:16px}
+  .tab{background:transparent;border:none;color:#cfe0f7;font-size:14px;font-weight:700;padding:11px 18px;cursor:pointer;border-bottom:3px solid transparent}
+  .tab.on{color:#fff;border-bottom-color:#fff}
+  main{max-width:1160px;margin:0 auto;padding:22px 18px 60px}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+  select,input{font-family:inherit;font-size:14px;padding:9px 11px;border:1px solid #d3dbe6;border-radius:10px;background:#fff;color:#1f2a37}
+  select:focus,input:focus{outline:none;border-color:#1f5fae}
+  label.fl{font-size:12px;font-weight:700;color:#6b7785;display:block;margin-bottom:5px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+  .kpi{background:#fff;border:1px solid #e3e8ee;border-radius:16px;padding:18px 20px;box-shadow:0 4px 16px rgba(16,24,40,.06)}
+  .kpi .lab{font-size:12px;font-weight:700;color:#6b7785;text-transform:uppercase;letter-spacing:.4px}
+  .kpi .val{font-size:26px;font-weight:800;margin-top:6px}
+  .kpi .sub{font-size:12px;color:#8a97a6;margin-top:3px}
+  .kpi.lucro .val{color:#15803d}.kpi.com .val{color:#1f5fae}.kpi.custo .val{color:#c2710c}.kpi.imp .val{color:#dc2626}.kpi.pro .val{color:#7c3aed}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+  .panel{background:#fff;border:1px solid #e3e8ee;border-radius:16px;padding:18px 20px;box-shadow:0 4px 16px rgba(16,24,40,.06)}
+  .panel h3{margin:0 0 12px;font-size:14px;font-weight:800;color:#334155}
+  .panel .cw{position:relative;height:280px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 9px;text-align:right;border-bottom:1px solid #eef2f6}
+  th{background:#f7f9fc;font-weight:700;color:#475569;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;position:sticky;top:0}
+  th:first-child,td:first-child{text-align:left}
+  tr:hover td{background:#f9fbfe}
+  .pos{color:#15803d;font-weight:700}.neg{color:#dc2626;font-weight:700}
+  .lgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:820px){.lgrid{grid-template-columns:1fr}}
+  .box{background:#fff;border:1px solid #e3e8ee;border-radius:16px;padding:18px 20px}
+  .box.ent{border-top:4px solid #15803d}.box.sai{border-top:4px solid #c2710c}
+  .box h3{margin:0 0 4px;font-size:15px;font-weight:800}
+  .box .bsub{font-size:12px;color:#8a97a6;margin-bottom:14px}
+  .fline{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .fline .nm{flex:1;font-size:13.5px;font-weight:600}
+  .fline input{width:130px;text-align:right}
+  .subtot{display:flex;justify-content:space-between;border-top:2px solid #eef2f6;margin-top:10px;padding-top:10px;font-weight:800;font-size:15px}
+  .resumo{background:linear-gradient(135deg,#1f5fae,#16467f);color:#fff;border-radius:16px;padding:20px 22px;margin-top:16px}
+  .resumo .rr{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid rgba(255,255,255,.12)}
+  .resumo .rr.big{font-size:19px;font-weight:800;border-bottom:none;margin-top:6px}
+  .resumo .rr .g{color:#8fe3b0}
+  .hint{font-size:12.5px;color:#8a97a6;background:#f7f9fc;border:1px dashed #d3dbe6;border-radius:10px;padding:10px 12px;margin-top:14px}
+  .mono{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<header>
+  <div class="htop">
+    <a class="back" href="index.html">&larr; Ambiente</a>
+    <h1>Gestão Financeira CHR</h1>
+    <span id="syncBadge" class="syncbadge">•</span>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-v="dash" onclick="setView('dash')">Dashboard</button>
+    <button class="tab" data-v="lanc" onclick="setView('lanc')">Lançamentos</button>
+    <button class="tab" data-v="tab" onclick="setView('tab')">Tabela mensal</button>
+  </div>
+</header>
+<main>
+  <div id="v-dash"></div>
+  <div id="v-lanc" style="display:none"></div>
+  <div id="v-tab" style="display:none"></div>
+</main>
+
+<script>
+const HIST_M={"2021-09":[0.0,37.47,4149.86,0.0,350.0],"2021-10":[6975.29,531.62,3207.19,653.85,4000.0],"2021-11":[3496.86,1109.09,2822.75,514.17,4037.1],"2021-12":[41143.76,1549.74,1251.02,544.1,4639.01],"2022-01":[18903.36,830.66,1131.65,2603.39,0.0],"2022-02":[15917.17,980.48,3792.98,4026.17,9440.16],"2022-03":[25701.83,1689.28,4505.53,2932.21,19883.92],"2022-04":[30781.75,1550.67,3497.64,1818.81,21157.09],"2022-05":[37186.07,1165.98,1590.57,2524.57,32032.41],"2022-06":[30774.48,982.31,1014.93,2526.86,25628.92],"2022-07":[41445.48,1196.48,2304.17,2192.23,38192.09],"2022-09":[27404.81,844.85,713.05,2543.76,23540.55],"2022-10":[35460.4,1161.14,1823.46,3751.18,28762.45],"2022-11":[27159.34,820.9,756.92,4353.13,22010.91],"2022-12":[28352.68,703.16,593.33,2110.84,24000.0],"2023-01":[26322.95,732.59,1740.72,3457.97,21535.3],"2023-02":[29230.87,725.96,3468.74,3698.65,23913.74],"2023-03":[20580.6,722.63,2571.69,4130.99,14382.34],"2023-04":[21772.52,729.65,602.39,3221.93,17218.55],"2023-05":[25871.34,380.0,3331.96,2627.25,0],"2023-06":[26155.15,970.29,3877.99,2468.78,16645.63],"2023-07":[26764.58,712.81,1482.85,2202.6,23866.31],"2023-08":[27214.98,702.67,898.78,3479.29,22134.24],"2023-09":[20262.8,759.67,1514.83,3428.58,0.0],"2023-10":[22098.47,702.67,3334.47,2388.66,17547.67],"2023-11":[26590.65,760.18,4986.48,2540.29,0],"2023-12":[23206.13,840.0,1322.27,3166.54,16997.33],"2024-01":[18527.09,797.67,3039.61,2887.6,11479.53],"2024-02":[34465.52,705.54,4717.92,2458.54,27650.52],"2024-03":[22323.21,962.67,2667.89,4985.53,13768.24],"2024-04":[26668.84,732.67,2036.76,3085.31,19397.89],"2024-05":[38046.27,650.0,3735.88,2835.91,22258.05],"2024-06":[28144.11,733.42,2188.15,3079.68,23689.43],"2024-07":[21468.14,744.44,2687.27,4901.38,18275.0],"2024-08":[32271.34,737.84,2127.89,4424.59,19984.82],"2024-09":[28684.8,1183.42,2675.52,717.7,23941.98],"2024-10":[16605.33,1292.42,1631.31,4543.26,16135.63],"2024-11":[27932.84,1302.72,1414.81,2360.3,21376.75],"2024-12":[25788.18,2202.72,458.3,2703.3,17625.92],"2025-01":[19661.69,1302.72,4218.35,2758.15,15625.0],"2025-02":[21333.63,1759.66,1134.22,2545.61,15517.95],"2025-03":[25022.54,1249.72,2421.59,0.0,20143.59],"2025-04":[24602.74,1341.92,3691.94,4449.61,17987.46],"2025-05":[34226.7,1364.72,3325.54,3850.88,25598.47],"2025-06":[33374.57,1370.77,1636.76,3905.35,24778.05],"2025-07":[33997.76,1978.49,1727.82,4273.08,0.0],"2025-08":[45929.71,1843.75,3609.18,4274.6,0.0],"2025-09":[30848.38,2092.06,2419.83,5579.78,23935.32],"2025-10":[31031.98,2171.09,2032.28,3558.72,23435.13],"2025-11":[38368.55,2621.07,2318.59,5400.57,27126.12],"2025-12":[36950.25,2085.47,1845.25,4853.88,0.0],"2026-01":[40832.53,3616.72,3809.02,5890.13,29045.84],"2026-02":[26314.03,2629.37,3368.3,5762.72,20434.0],"2026-03":[26458.29,2679.37,523.34,4709.77,17100.0],"2026-04":[36057.58,2925.22,1264.06,3189.91,25000.0],"2026-05":[37642.03,3095.74,885.37,2648.46,0],"2026-06":[30307.27,2536.9,2053.53,4166.65,24831.25]};
+const HIST_B={"2021-10":{"AGX":3930.13,"PLANTAR":2810.89,"TELAS MM":234.27},"2021-11":{"SERVI":766.0,"PLANTAR":2594.75,"PRADO":136.11},"2021-12":{"GOIÁS FLORA":1100.8,"PLANTAR":5359.43,"PRADO":311.31,"MACCAFERRI":32148.19,"SUPREMA":2224.03},"2022-01":{"MACCAFERRI":18468.02,"RAWELL":435.34},"2022-02":{"GOIÁS FLORA":659.78,"MACCAFERRI":13845.7,"PRADO":123.64,"RAWELL":1288.05},"2022-03":{"MACCAFERRI":23570.86,"RAWELL":588.5,"GOIÁS FLORA":1088.0,"PRADO":454.47},"2022-04":{"MACCAFERRI":22182.27,"METAW":7924.93,"PRADO":674.55},"2022-05":{"MACCAFERRI":21279.99,"METAW":5026.31,"VONDER":7879.77,"TMC":3000.0},"2022-06":{"MACCAFERRI":19018.91,"METAW":5225.64,"VONDER":6529.93},"2022-07":{"MACCAFERRI":26889.75,"METAW":4944.06,"VONDER":5815.75,"GOIÁS FLORA":3795.92},"2022-09":{"MACCAFERRI":15884.48,"METAW":5943.88,"VONDER":5576.45},"2022-10":{"MACCAFERRI":14946.63,"METAW":14041.64,"VONDER":5314.93,"GOIÁS FLORA":1157.2},"2022-11":{"MACCAFERRI":10811.95,"METAW":11202.62,"VONDER":5144.77},"2022-12":{"MACCAFERRI":13534.47,"METAW":10630.75,"VONDER":4187.46},"2023-01":{"MACCAFERRI":8309.79,"METAW":8709.58,"VONDER":9303.58},"2023-02":{"MACCAFERRI":18322.69,"METAW":4328.96,"VONDER":6489.38,"CEDISA":89.84},"2023-03":{"MACCAFERRI":12455.62,"METAW":2338.64,"VONDER":5606.63,"CEDISA":179.71},"2023-04":{"MACCAFERRI":12541.72,"METAW":2748.11,"VONDER":6359.61,"CEDISA":123.08},"2023-05":{"MACCAFERRI":12098.55,"METAW":2828.58,"VONDER":10695.0,"CEDISA":249.21},"2023-06":{"MACCAFERRI":12413.6,"METAW":2407.34,"VONDER":11334.21},"2023-07":{"MACCAFERRI":15309.61,"METAW":1117.06,"VONDER":10337.91},"2023-08":{"MACCAFERRI":16342.43,"METAW":2321.36,"VONDER":8551.19},"2023-09":{"MACCAFERRI":12473.93,"METAW":935.04,"VONDER":6853.83},"2023-10":{"MACCAFERRI":13602.59,"METAW":4104.1,"VONDER":4391.78},"2023-11":{"MACCAFERRI":17401.22,"METAW":1884.21,"VONDER":5053.32,"LAHUMAN":2251.9},"2023-12":{"MACCAFERRI":15433.48,"VONDER":7772.65},"2024-01":{"MACCAFERRI":8995.75,"METAW":407.25,"VONDER":7631.46,"LAHUMAN":1058.77,"NEWFIX":433.86},"2024-02":{"MACCAFERRI":14765.97,"METAW":1944.25,"VONDER":17209.3,"LAHUMAN":546.0},"2024-03":{"MACCAFERRI":11340.49,"METAW":697.36,"VONDER":9049.39,"LAHUMAN":997.83,"NEWFIX":238.14},"2024-04":{"MACCAFERRI":11004.27,"METAW":1042.69,"VONDER":13656.35,"LAHUMAN":575.47,"NEWFIX":390.06},"2024-05":{"MACCAFERRI":15933.0,"METAW":320.61,"VONDER":21199.14,"LAHUMAN":593.52},"2024-06":{"MACCAFERRI":13763.67,"VONDER":11653.82,"LAHUMAN":2726.62},"2024-07":{"MACCAFERRI":12047.92,"VONDER":8373.14,"LAHUMAN":1047.08},"2024-08":{"MACCAFERRI":17854.14,"VONDER":12478.0,"LAHUMAN":1939.2},"2024-09":{"MACCAFERRI":10037.67,"VONDER":15689.47,"LAHUMAN":1147.56,"NEWFIX":1707.22,"ELGIN":102.88},"2024-10":{"MACCAFERRI":10142.25,"VONDER":4524.26,"LAHUMAN":1871.15,"ELGIN":67.67},"2024-11":{"MACCAFERRI":10192.33,"VONDER":14124.93,"LAHUMAN":2088.46,"NEWFIX":1080.0,"ELGIN":447.12},"2024-12":{"MACCAFERRI":6277.08,"VONDER":15675.74,"LAHUMAN":1208.78,"NEWFIX":2481.87,"ELGIN":144.71},"2025-01":{"MACCAFERRI":8131.09,"VONDER":9340.74,"LAHUMAN":1412.87,"NEWFIX":224.66,"ELGIN":552.33},"2025-02":{"MACCAFERRI":5242.55,"VONDER":12004.49,"LAHUMAN":2384.7,"NEWFIX":1235.91,"ELGIN":465.98},"2025-03":{"MACCAFERRI":7727.16,"VONDER":13747.61,"LAHUMAN":2043.66,"NEWFIX":964.85,"ELGIN":539.26},"2025-04":{"MACCAFERRI":4739.84,"VONDER":17185.14,"LAHUMAN":1277.9,"NEWFIX":1350.0,"ELGIN":49.86},"2025-05":{"MACCAFERRI":3801.28,"VONDER":26211.26,"LAHUMAN":1681.4,"NEWFIX":1683.32,"ELGIN":849.44},"2025-06":{"MACCAFERRI":5153.25,"VONDER":22501.34,"LAHUMAN":3262.88,"NEWFIX":1861.0,"ELGIN":596.1},"2025-07":{"MACCAFERRI":8567.12,"VONDER":21324.97,"LAHUMAN":1546.25,"NEWFIX":2186.0,"ELGIN":373.42},"2025-08":{"MACCAFERRI":11556.12,"VONDER":23895.99,"LAHUMAN":7111.42,"NEWFIX":3292.62,"ELGIN":73.56},"2025-09":{"MACCAFERRI":7242.65,"VONDER":19153.48,"LAHUMAN":953.97,"NEWFIX":2945.2,"ELGIN":553.08},"2025-10":{"MACCAFERRI":6725.7,"VONDER":18854.16,"LAHUMAN":2777.12,"NEWFIX":2645.0,"ELGIN":30.0},"2025-11":{"MACCAFERRI":17405.45,"VONDER":17527.25,"LAHUMAN":879.85,"NEWFIX":2556.0},"2025-12":{"MACCAFERRI":9139.69,"VONDER":19180.82,"LAHUMAN":7296.52,"NEWFIX":1333.22},"2026-01":{"MACCAFERRI":23328.94,"VONDER":15615.5,"LAHUMAN":394.19,"NEWFIX":1493.9},"2026-02":{"MACCAFERRI":9028.1,"VONDER":14341.31,"LAHUMAN":1588.99,"NEWFIX":1355.63},"2026-03":{"MACCAFERRI":7079.91,"VONDER":14335.88,"LAHUMAN":3854.18,"NEWFIX":624.75,"MULTFITAS":563.57},"2026-04":{"MACCAFERRI":11446.94,"VONDER":20545.21,"LAHUMAN":2811.09,"NEWFIX":919.67,"MULTFITAS":334.67},"2026-05":{"MACCAFERRI":12083.13,"VONDER":23516.75,"LAHUMAN":700.0,"NEWFIX":1342.15},"2026-06":{"MACCAFERRI":7854.35,"VONDER":19925.66,"LAHUMAN":2377.26,"NEWFIX":150.0}};
+const HIST_C={"2021-09":{"Celular":37.47,"Gasolina":2167.08,"Alimentação":434.53,"Hospedagem":918.5,"Outros":629.75,"Pró-labore":350.0},"2021-10":{"Celular":181.62,"Contador":350.0,"Gasolina":2105.13,"Alimentação":226.31,"Hospedagem":440.0,"Impostos":653.85,"Outros":435.75,"Pró-labore":4000.0},"2021-11":{"Celular":252.11,"Contador":350.0,"Software/Sistemas":148.98,"Seguro":358.0,"Gasolina":1357.85,"Alimentação":296.83,"Hospedagem":505.0,"Impostos":514.17,"Outros":1170.17,"Pró-labore":4037.1},"2021-12":{"Celular":217.09,"Contador":700.0,"Software/Sistemas":85.0,"Seguro":547.65,"Outros":1547.01,"Gasolina":763.43,"Alimentação":37.59,"Impostos":544.1,"Pró-labore":4639.01},"2022-01":{"Celular":207.11,"Contador":350.0,"Software/Sistemas":90.0,"Seguro":183.55,"Gasolina":250.0,"Alimentação":21.0,"Impostos":2603.39,"Outros":3205.03,"CORE":736.0},"2022-02":{"Celular":262.09,"Contador":350.0,"Seguro":368.39,"Gasolina":1257.08,"Alimentação":105.49,"Impostos":4026.17,"Outros":2430.41,"Pró-labore":9440.16},"2022-03":{"Celular":498.22,"Contador":385.0,"Gasolina":1526.9,"Alimentação":415.09,"Pedágio":77.64,"Impostos":2932.21,"Outros":2684.9,"Software/Sistemas":79.0,"Seguro":727.06,"Hospedagem":105.0,"Pró-labore":19883.92},"2022-04":{"Celular":330.89,"Contador":765.0,"Software/Sistemas":88.98,"Seguro":365.8,"Gasolina":1775.63,"Alimentação":148.06,"Impostos":1818.81,"Outros":1573.95,"Pró-labore":21157.09},"2022-05":{"Celular":325.9,"Contador":385.0,"Software/Sistemas":88.98,"Seguro":366.1,"Gasolina":910.36,"Alimentação":128.59,"Impostos":2524.57,"Outros":551.62,"Pró-labore":32032.41},"2022-06":{"Celular":325.9,"Contador":385.0,"Software/Sistemas":79.0,"Seguro":192.41,"Gasolina":895.49,"Alimentação":76.44,"Impostos":2526.86,"Outros":43.0,"Pró-labore":25628.92},"2022-07":{"Celular":342.58,"Contador":385.0,"Software/Sistemas":99.0,"Seguro":369.9,"Gasolina":1001.85,"Alimentação":759.82,"Hospedagem":492.5,"Impostos":2192.23,"Outros":50.0,"Pró-labore":38192.09},"2022-09":{"Celular":350.87,"Contador":385.0,"Software/Sistemas":108.98,"Alimentação":193.05,"Impostos":2543.76,"Outros":520.0,"Pró-labore":23540.55},"2022-10":{"Celular":318.16,"Contador":385.0,"Software/Sistemas":207.98,"Seguro":250.0,"Gasolina":738.73,"Alimentação":265.73,"Hospedagem":156.0,"Impostos":3751.18,"Outros":663.0,"Pró-labore":28762.45},"2022-11":{"Celular":327.0,"Contador":385.0,"Software/Sistemas":108.9,"Gasolina":404.92,"Impostos":4353.13,"Outros":352.0,"Pró-labore":22010.91},"2022-12":{"Celular":318.16,"Contador":385.0,"Gasolina":198.33,"Alimentação":35.0,"Impostos":2110.84,"Outros":360.0,"Pró-labore":24000.0},"2023-01":{"Celular":245.59,"Contador":385.0,"Software/Sistemas":102.0,"Gasolina":772.92,"Alimentação":368.87,"Hospedagem":170.0,"Impostos":3457.97,"Outros":428.93,"Pró-labore":21535.3},"2023-02":{"Celular":340.96,"Contador":385.0,"Gasolina":1488.35,"Alimentação":494.96,"Hospedagem":513.0,"Impostos":3698.65,"Outros":972.43,"Pró-labore":23913.74},"2023-03":{"Celular":302.63,"Contador":420.0,"Gasolina":1151.71,"Alimentação":554.98,"Hospedagem":467.0,"Impostos":4130.99,"Outros":398.0,"Pró-labore":14382.34},"2023-04":{"Celular":309.65,"Contador":420.0,"Gasolina":440.84,"Alimentação":161.55,"Impostos":3221.93,"Pró-labore":17218.55},"2023-05":{"Celular":-40.0,"Contador":420.0,"Gasolina":1039.71,"Alimentação":453.35,"Hospedagem":255.5,"Impostos":2627.25,"Outros":1583.4},"2023-06":{"Celular":550.29,"Contador":420.0,"Gasolina":245.67,"Alimentação":466.2,"Impostos":2468.78,"Outros":3166.12,"Pró-labore":16645.63},"2023-07":{"Celular":292.81,"Contador":420.0,"Gasolina":217.45,"Alimentação":132.4,"Impostos":2202.6,"Outros":1133.0,"Pró-labore":23866.31},"2023-08":{"Celular":282.67,"Contador":420.0,"Gasolina":688.39,"Alimentação":110.39,"Impostos":3479.29,"Outros":100.0,"Pró-labore":22134.24},"2023-09":{"Celular":282.67,"Contador":420.0,"Software/Sistemas":57.0,"Gasolina":321.21,"Alimentação":123.15,"Impostos":3428.58,"Outros":1070.47},"2023-10":{"Celular":282.67,"Contador":420.0,"Gasolina":1685.99,"Alimentação":662.28,"Hospedagem":986.2,"Impostos":2388.66,"Pró-labore":17547.67},"2023-11":{"Celular":290.18,"Contador":420.0,"Software/Sistemas":50.0,"Gasolina":2542.27,"Alimentação":383.81,"Hospedagem":785.4,"Impostos":2540.29,"Outros":1275.0},"2023-12":{"Contador":840.0,"Gasolina":478.99,"Alimentação":82.68,"Impostos":3166.54,"Outros":760.6,"Pró-labore":16997.33},"2024-01":{"Celular":282.67,"Contador":420.0,"Software/Sistemas":95.0,"Gasolina":1515.37,"Alimentação":881.71,"Hospedagem":235.0,"Impostos":2887.6,"Outros":407.53,"Pró-labore":11479.53},"2024-02":{"Celular":285.54,"Contador":420.0,"Gasolina":1129.53,"Alimentação":457.94,"Hospedagem":373.4,"Impostos":2458.54,"Outros":2757.05,"Pró-labore":27650.52},"2024-03":{"Celular":282.67,"Contador":450.0,"Software/Sistemas":230.0,"Gasolina":948.55,"Alimentação":498.95,"Hospedagem":395.9,"Impostos":4985.53,"Outros":824.49,"Pró-labore":13768.24},"2024-04":{"Celular":282.67,"Contador":450.0,"Outros":357.0,"Gasolina":1017.59,"Alimentação":270.37,"Hospedagem":391.8,"Impostos":3085.31,"Pró-labore":19397.89},"2024-05":{"Contador":450.0,"Software/Sistemas":200.0,"Outros":316.17,"Gasolina":2141.5,"Alimentação":712.21,"Hospedagem":566.0,"Impostos":2835.91,"Pró-labore":22258.05},"2024-06":{"Celular":283.42,"Contador":450.0,"Outros":1422.16,"Gasolina":463.93,"Alimentação":302.06,"Impostos":3079.68,"Pró-labore":23689.43},"2024-07":{"Celular":294.44,"Contador":450.0,"Outros":598.69,"Gasolina":1442.63,"Alimentação":415.95,"Hospedagem":230.0,"Impostos":4901.38,"Pró-labore":18275.0},"2024-08":{"Celular":287.84,"Contador":450.0,"Gasolina":1399.22,"Alimentação":353.67,"Hospedagem":375.0,"Impostos":4424.59,"Pró-labore":19984.82},"2024-09":{"Celular":283.42,"Contador":900.0,"Gasolina":1116.51,"Alimentação":207.61,"Impostos":717.7,"Outros":1351.4,"Pró-labore":23941.98},"2024-10":{"Celular":283.42,"Contador":900.0,"Software/Sistemas":109.0,"Gasolina":993.06,"Alimentação":211.44,"Impostos":4543.26,"Outros":426.81,"Pró-labore":16135.63},"2024-11":{"Celular":293.72,"Contador":900.0,"Software/Sistemas":109.0,"Gasolina":1071.8,"Alimentação":205.73,"Impostos":2360.3,"Outros":137.28,"Pró-labore":21376.75},"2024-12":{"Celular":293.72,"Contador":1800.0,"Software/Sistemas":109.0,"Gasolina":232.85,"Alimentação":98.25,"Impostos":2703.3,"Outros":127.2,"Pró-labore":17625.92},"2025-01":{"Celular":293.72,"Contador":900.0,"Software/Sistemas":109.0,"Gasolina":1511.6,"Alimentação":550.51,"Hospedagem":732.0,"Impostos":2758.15,"Outros":403.57,"CORE":1020.67,"Pró-labore":15625.0},"2025-02":{"Celular":293.72,"Contador":900.0,"Software/Sistemas":565.94,"Gasolina":840.07,"Alimentação":154.15,"Impostos":2545.61,"Outros":140.0,"Pró-labore":15517.95},"2025-03":{"Celular":292.72,"Contador":550.0,"Software/Sistemas":407.0,"Gasolina":1216.73,"Alimentação":330.86,"Hospedagem":234.0,"Outros":640.0,"Pró-labore":20143.59},"2025-04":{"Celular":293.72,"Contador":550.0,"Software/Sistemas":498.2,"Gasolina":984.1,"Alimentação":1081.7,"Impostos":4449.61,"Outros":507.0,"CORE":1119.14,"Pró-labore":17987.46},"2025-05":{"Celular":293.72,"Contador":550.0,"Software/Sistemas":521.0,"Gasolina":1619.23,"Alimentação":364.19,"Impostos":3850.88,"Outros":1342.12,"Pró-labore":25598.47},"2025-06":{"Celular":299.77,"Contador":550.0,"Software/Sistemas":521.0,"Gasolina":830.15,"Alimentação":247.71,"Impostos":3905.35,"Outros":558.9,"Pró-labore":24778.05},"2025-07":{"Celular":293.72,"Contador":550.0,"Software/Sistemas":521.0,"Gasolina":509.73,"Alimentação":163.82,"Impostos":4273.08,"Outros":1054.27,"Notebooks":613.77},"2025-08":{"Celular":293.72,"Software/Sistemas":619.66,"Gasolina":1001.81,"Alimentação":622.5,"Hospedagem":159.0,"Impostos":4274.6,"Outros":1825.87,"Notebooks":930.37},"2025-09":{"Celular":293.72,"Contador":550.0,"Software/Sistemas":317.97,"Gasolina":1949.83,"Alimentação":220.0,"Impostos":5579.78,"Outros":250.0,"Notebooks":930.37,"Pró-labore":23935.32},"2025-10":{"Celular":293.72,"Contador":550.0,"Software/Sistemas":397.0,"Gasolina":1144.22,"Alimentação":377.25,"Impostos":3558.72,"Outros":510.81,"Notebooks":930.37,"Pró-labore":23435.13},"2025-11":{"Celular":293.72,"Contador":1100.0,"Software/Sistemas":297.0,"Gasolina":977.7,"Alimentação":464.38,"Impostos":5400.57,"Outros":876.51,"Notebooks":930.35,"Pró-labore":27126.12},"2025-12":{"Celular":302.32,"Contador":550.0,"Software/Sistemas":302.8,"Gasolina":484.57,"Alimentação":181.0,"Impostos":4853.88,"Outros":1179.68,"Notebooks":930.35},"2026-01":{"Celular":310.92,"Contador":1100.0,"Software/Sistemas":525.8,"Outros":2872.41,"Notebooks":930.0,"Gasolina":250.2,"Alimentação":495.17,"Impostos":5890.13,"CORE":941.24,"Pró-labore":29045.84},"2026-02":{"Celular":308.79,"Contador":586.0,"Software/Sistemas":804.58,"Notebooks":930.0,"Gasolina":1653.47,"Alimentação":350.48,"Hospedagem":130.0,"Impostos":5762.72,"Outros":94.26,"CORE":1140.09,"Pró-labore":20434.0},"2026-03":{"Celular":308.79,"Contador":586.0,"Software/Sistemas":854.58,"Notebooks":930.0,"Gasolina":523.34,"Impostos":4709.77,"Pró-labore":17100.0},"2026-04":{"Celular":604.64,"Contador":586.0,"Software/Sistemas":804.58,"Notebooks":930.0,"Gasolina":844.06,"Impostos":3189.91,"Outros":420.0,"Pró-labore":25000.0},"2026-05":{"Celular":311.16,"Contador":950.0,"Software/Sistemas":904.58,"Notebooks":930.0,"Gasolina":758.77,"Alimentação":126.6,"Impostos":2648.46},"2026-06":{"Celular":302.32,"Contador":400.0,"Software/Sistemas":904.58,"Notebooks":930.0,"Gasolina":1122.18,"Alimentação":214.35,"Hospedagem":620.0,"Impostos":4166.65,"Outros":97.0,"Pró-labore":24831.25}};
+const FB_URL="https://jornada-v8-default-rtdb.firebaseio.com/financas_chr", STORE_KEY="chr_financas_db_v1";
+const MARCAS=["VONDER","MACCAFERRI","LAHUMAN","NEWFIX","MULTFITAS"];
+const BRAND_COLORS={VONDER:"#1f5fae",MACCAFERRI:"#c2710c",LAHUMAN:"#7a3aae",NEWFIX:"#15803d",MULTFITAS:"#0891b2",METAW:"#0e7490",ELGIN:"#db2777",EXTRAS:"#94a3b8",OUTRAS:"#94a3b8"};
+const CAT={fixo:["Celular","Contador","Mercos","Umbler","TGB","Nota Control","Notebooks","Outro fixo"],
+           var:["Gasolina","Alimentação","Hospedagem","Pedágio","CORE","Outros"],
+           imposto:["Simples / Impostos","INSS","IR","FGTS"]};
+const MPT=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const fmt=v=>(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt0=v=>Math.round(v||0).toLocaleString("pt-BR");
+const mLabel=m=>{const[y,mm]=m.split("-");return MPT[+mm-1]+"/"+y.slice(2);};
+const kfmt=v=>{v=Math.round(v||0);const a=Math.abs(v);if(a>=1000)return (v/1000).toFixed(a<10000?1:0).replace(".",",")+"k";return String(v);};
+const CAT_COLORS={"Impostos":"#dc2626","Pró-labore":"#7c3aed","Gasolina":"#c2710c","Alimentação":"#16a34a","Hospedagem":"#0891b2","Contador":"#2563eb","Celular":"#db2777","Software/Sistemas":"#0d9488","Notebooks":"#64748b","CORE":"#a16207","Pedágio":"#f59e0b","Seguro":"#4b5563","Carro":"#334155","Outros":"#94a3b8"};
+
+let DB=null,view="dash";
+function blankDB(){return {v:1,updated_at:0,meses:{}};}
+function migrate(d){const b=blankDB();return Object.assign(b,d||{},{meses:(d&&d.meses)||{}});}
+
+/* ---- agregação por mês (histórico OU lançamento) ---- */
+function allMonths(){const s=new Set(Object.keys(HIST_M));Object.keys(DB.meses||{}).forEach(m=>s.add(m));return[...s].sort();}
+function aggFor(m){
+  const L=DB.meses&&DB.meses[m];
+  if(L){
+    let com=0,brands={};(L.entradas||[]).forEach(e=>{com+=(+e.valor||0);const k=(e.marca||"OUTRAS").toUpperCase();brands[k]=(brands[k]||0)+(+e.valor||0);});
+    let fixo=0,vr=0,imp=0;(L.saidas||[]).forEach(s=>{const v=+s.valor||0;if(s.cat==="fixo")fixo+=v;else if(s.cat==="var")vr+=v;else if(s.cat==="imposto")imp+=v;});
+    const pro=+L.prolabore||0, si=+L.saldo_inicial||0;
+    const custoReal=fixo+vr+imp;
+    return {com,fixo,var:vr,imp,pro,si,custoReal,lpa:com-custoReal,brands,fonte:"lanc"};
+  }
+  const h=HIST_M[m];if(!h)return null;
+  const custoReal=h[1]+h[2]+h[3];
+  return {com:h[0],fixo:h[1],var:h[2],imp:h[3],pro:h[4],si:0,custoReal,lpa:h[0]-custoReal,brands:HIST_B[m]||{},fonte:"hist"};
+}
+function jsCat(item,cat){const n=(item||"").toUpperCase();if(cat==="imposto")return "Impostos";
+  if(n.includes("GASOLINA"))return "Gasolina";if(n.includes("ALIMENTA"))return "Alimentação";
+  if(n.includes("HOSPEDAGEM"))return "Hospedagem";if(n.includes("PEDAGIO")||n.includes("PEDÁGIO"))return "Pedágio";
+  if(n.includes("CELULAR")||n.includes("TELEFONE"))return "Celular";if(n.includes("CONTADOR"))return "Contador";
+  if(n.includes("NOTEBOOK"))return "Notebooks";if(n.includes("CORE"))return "CORE";
+  if(["MERCOS","UMBLER","TGB","NOTA CONTROL","OFFICE"].some(k=>n.includes(k)))return "Software/Sistemas";
+  return "Outros";}
+function custosDetalhe(m){const L=DB.meses&&DB.meses[m];
+  if(L){const o={};(L.saidas||[]).forEach(s=>{const c=jsCat(s.item,s.cat);o[c]=(o[c]||0)+(+s.valor||0);});const p=+L.prolabore||0;if(p)o["Pró-labore"]=(o["Pró-labore"]||0)+p;return o;}
+  return HIST_C[m]||{};}
+
+/* ================= DASHBOARD ================= */
+let charts={};
+function destroyCharts(){Object.values(charts).forEach(c=>{try{c.destroy();}catch(e){}});charts={};}
+function dashPresetRange(p){const AM=allMonths();
+  if(p==="all")return[AM[0],AM[AM.length-1]];
+  if(p==="12m")return[AM[Math.max(0,AM.length-12)],AM[AM.length-1]];
+  if(p==="6m")return[AM[Math.max(0,AM.length-6)],AM[AM.length-1]];
+  const ys=AM.filter(m=>m.startsWith(p));return ys.length?[ys[0],ys[ys.length-1]]:[AM[0],AM[AM.length-1]];}
+function dashSetPreset(v){if(v==="custom")return;const r=dashPresetRange(v);window._dashFrom=r[0];window._dashTo=r[1];renderDash();}
+function dashSetFrom(v){window._dashFrom=v;if(window._dashTo&&v>window._dashTo)window._dashTo=v;renderDash();}
+function dashSetTo(v){window._dashTo=v;if(window._dashFrom&&v<window._dashFrom)window._dashFrom=v;renderDash();}
+function renderDash(){
+  const el=document.getElementById("v-dash");
+  if(window.ChartDataLabels&&!window._dlReg){Chart.register(window.ChartDataLabels);window._dlReg=true;}
+  const AM=allMonths();
+  let from=window._dashFrom,to=window._dashTo;
+  if(!from||!to||AM.indexOf(from)<0||AM.indexOf(to)<0){const r=dashPresetRange("12m");from=r[0];to=r[1];}
+  if(from>to){const t=from;from=to;to=t;}
+  window._dashFrom=from;window._dashTo=to;
+  const anos=[...new Set(AM.map(m=>m.slice(0,4)))].sort();
+  const presets=[["12m","Últimos 12 meses"],["6m","Últimos 6 meses"],["all","Todo o histórico"],...anos.map(a=>[a,a])];
+  const curPreset=(()=>{for(const p of presets){const r=dashPresetRange(p[0]);if(r[0]===from&&r[1]===to)return p[0];}return"custom";})();
+  const mopts=s=>AM.map(m=>`<option value="${m}"${m===s?" selected":""}>${mLabel(m)}</option>`).join("");
+  el.innerHTML=`
+    <div class="row">
+      <div><label class="fl">Período</label>
+      <select onchange="dashSetPreset(this.value)">
+        ${presets.map(p=>`<option value="${p[0]}"${p[0]===curPreset?" selected":""}>${p[1]}</option>`).join("")}
+        <option value="custom"${curPreset==="custom"?" selected":""}>Personalizado</option>
+      </select></div>
+      <div><label class="fl">De</label>
+      <select onchange="dashSetFrom(this.value)">${mopts(from)}</select></div>
+      <div><label class="fl">Até</label>
+      <select onchange="dashSetTo(this.value)">${mopts(to)}</select></div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="grid2">
+      <div class="panel"><h3>Comissões e Lucro (LPA) por mês</h3><div class="cw"><canvas id="cMes"></canvas></div></div>
+      <div class="panel"><h3>Mix de comissões por marca</h3><div class="cw"><canvas id="cMix"></canvas></div></div>
+      <div class="panel"><h3>Custos por categoria (período)</h3><div class="cw"><canvas id="cCat"></canvas></div></div>
+      <div class="panel"><h3>Evolução dos custos por categoria</h3><div class="cw"><canvas id="cCatMes"></canvas></div></div>
+      <div class="panel"><h3>Pró-labore por sócio (por mês)</h3><div class="cw"><canvas id="cPro"></canvas></div></div>
+      <div class="panel"><h3>Comissões por ano</h3><div class="cw"><canvas id="cAno"></canvas></div></div>
+    </div>`;
+  let months=AM.filter(m=>m>=from&&m<=to);
+  const A=months.map(m=>({m,...aggFor(m)})).filter(x=>x.com!==undefined);
+  const tCom=A.reduce((s,x)=>s+x.com,0),tLpa=A.reduce((s,x)=>s+x.lpa,0),tCusto=A.reduce((s,x)=>s+x.custoReal,0),tImp=A.reduce((s,x)=>s+x.imp,0);
+  const marg=tCom?tLpa/tCom*100:0;
+  const tPro=A.reduce((s,x)=>s+(x.pro||0),0);
+  document.getElementById("kpis").innerHTML=`
+    <div class="kpi com"><div class="lab">Comissões</div><div class="val mono">R$ ${fmt0(tCom)}</div><div class="sub">${A.length} meses</div></div>
+    <div class="kpi lucro"><div class="lab">Lucro (LPA)</div><div class="val mono">R$ ${fmt0(tLpa)}</div><div class="sub">margem ${marg.toFixed(0)}%</div></div>
+    <div class="kpi custo"><div class="lab">Custo real</div><div class="val mono">R$ ${fmt0(tCusto)}</div><div class="sub">${tCom?(tCusto/tCom*100).toFixed(0):0}% da comissão</div></div>
+    <div class="kpi imp"><div class="lab">Impostos</div><div class="val mono">R$ ${fmt0(tImp)}</div><div class="sub">${tCom?(tImp/tCom*100).toFixed(0):0}% da comissão</div></div>
+    <div class="kpi pro"><div class="lab">Pró-labore</div><div class="val mono">R$ ${fmt0(tPro)}</div><div class="sub">Chris R$ ${fmt0(tPro*0.6)} • Val R$ ${fmt0(tPro*0.4)}</div></div>`;
+  destroyCharts();
+  const lbl=A.map(x=>mLabel(x.m));
+  const step=Math.max(1,Math.ceil(A.length/14)), showI=i=>i%step===0||i===A.length-1;
+  charts.cMes=new Chart(document.getElementById("cMes"),{data:{labels:lbl,datasets:[
+      {type:"bar",label:"Comissões",data:A.map(x=>x.com),backgroundColor:"#bcd4f2",order:2,
+        datalabels:{display:ctx=>showI(ctx.dataIndex)&&ctx.dataset.data[ctx.dataIndex]>0,anchor:"end",align:"end",rotation:A.length>8?-90:0,color:"#1f5fae",font:{size:9,weight:"bold"},formatter:v=>kfmt(v)}},
+      {type:"line",label:"LPA",data:A.map(x=>x.lpa),borderColor:"#15803d",backgroundColor:"#15803d",tension:.3,order:1,pointRadius:2,
+        datalabels:{display:ctx=>showI(ctx.dataIndex),anchor:"start",align:"bottom",color:"#15803d",font:{size:9,weight:"bold"},formatter:v=>kfmt(v)}}]},
+    options:baseOpt()});
+  const bt={};A.forEach(x=>{Object.entries(x.brands||{}).forEach(([k,v])=>{const kk=MARCAS.includes(k)?k:"OUTRAS";bt[kk]=(bt[kk]||0)+v;});});
+  const bk=Object.keys(bt).sort((a,b)=>bt[b]-bt[a]);
+  charts.cMix=new Chart(document.getElementById("cMix"),{type:"doughnut",data:{labels:bk,datasets:[{data:bk.map(k=>bt[k]),backgroundColor:bk.map(k=>BRAND_COLORS[k]||"#94a3b8"),borderWidth:2,borderColor:"#fff"}]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:6},plugins:{legend:{position:"right",labels:{font:{size:12}}},
+      datalabels:{color:"#fff",font:{size:11,weight:"bold"},textAlign:"center",formatter:(v)=>{const p=tCom?v/tCom*100:0;return p>=7?kfmt(v)+"\n"+p.toFixed(0)+"%":(p>=3?p.toFixed(0)+"%":"");}},
+      tooltip:{callbacks:{label:c=>c.label+": R$ "+fmt0(c.parsed)+" ("+(c.parsed/tCom*100).toFixed(0)+"%)"}}}}});
+  const catTot={};A.forEach(x=>{const d=custosDetalhe(x.m);Object.entries(d).forEach(([c,v])=>{if(c==="Pró-labore")return;catTot[c]=(catTot[c]||0)+v;});});
+  const catKeys=Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]);
+  charts.cCat=new Chart(document.getElementById("cCat"),{type:"bar",data:{labels:catKeys,datasets:[{label:"Custo",data:catKeys.map(k=>catTot[k]),backgroundColor:catKeys.map(k=>CAT_COLORS[k]||"#94a3b8"),borderRadius:5}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,layout:{padding:{right:48}},plugins:{legend:{display:false},
+      datalabels:{anchor:"end",align:"end",color:"#334155",font:{size:10,weight:"bold"},formatter:v=>"R$ "+kfmt(v)},
+      tooltip:{callbacks:{label:c=>"R$ "+fmt0(c.parsed.x)}}},scales:{x:{grace:"12%",ticks:{callback:v=>"R$ "+kfmt(v)}}}}});
+  const topCats=catKeys.slice(0,6), hasOut=catKeys.length>6;
+  const stackCats=[...topCats]; if(hasOut)stackCats.push("Outros +");
+  const dsCat=stackCats.map(c=>({label:c,stack:"s",backgroundColor:CAT_COLORS[c.replace(" +","")]||"#94a3b8",
+    data:A.map(x=>{const d=custosDetalhe(x.m);if(c==="Outros +"){let s=0;Object.entries(d).forEach(([k,v])=>{if(k!=="Pró-labore"&&!topCats.includes(k))s+=v;});return s;}return d[c]||0;}),
+    datalabels:{display:ctx=>A.length<=13&&ctx.dataset.data[ctx.dataIndex]>=1500,color:"#fff",font:{size:8,weight:"bold"},formatter:v=>kfmt(v)}}));
+  charts.cCatMes=new Chart(document.getElementById("cCatMes"),{type:"bar",data:{labels:lbl,datasets:dsCat},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}},tooltip:{callbacks:{label:c=>c.dataset.label+": R$ "+fmt0(c.parsed.y)}}},scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>"R$ "+kfmt(v)}}}}});
+  charts.cPro=new Chart(document.getElementById("cPro"),{type:"bar",data:{labels:lbl,datasets:[
+      {label:"Christopher (60%)",data:A.map(x=>(x.pro||0)*0.6),backgroundColor:"#2563eb",stack:"p",
+        datalabels:{display:ctx=>showI(ctx.dataIndex)&&ctx.dataset.data[ctx.dataIndex]>0,color:"#fff",font:{size:8,weight:"bold"},formatter:v=>kfmt(v)}},
+      {label:"Valdicéia (40%)",data:A.map(x=>(x.pro||0)*0.4),backgroundColor:"#7c3aed",stack:"p",
+        datalabels:{display:ctx=>showI(ctx.dataIndex)&&ctx.dataset.data[ctx.dataIndex]>0,color:"#fff",font:{size:8,weight:"bold"},formatter:v=>kfmt(v)}}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:11}}},tooltip:{callbacks:{label:c=>c.dataset.label+": R$ "+fmt0(c.parsed.y)}}},scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>"R$ "+kfmt(v)}}}}});
+  const yr={};allMonths().forEach(m=>{const y=m.slice(0,4);const a=aggFor(m);if(a){yr[y]=(yr[y]||0)+a.com;}});
+  const yk=Object.keys(yr).sort();
+  charts.cAno=new Chart(document.getElementById("cAno"),{type:"bar",data:{labels:yk,datasets:[{label:"Comissões",data:yk.map(k=>yr[k]),backgroundColor:"#1f5fae",borderRadius:6,
+      datalabels:{anchor:"end",align:"end",color:"#16467f",font:{size:11,weight:"bold"},formatter:v=>"R$ "+kfmt(v)}}]},options:baseOpt(true)});
+}
+function baseOpt(noLeg){return {responsive:true,maintainAspectRatio:false,layout:{padding:{top:20}},plugins:{legend:{display:!noLeg,position:"bottom"},tooltip:{callbacks:{label:c=>c.dataset.label+": R$ "+fmt0(c.parsed.y)}}},scales:{y:{grace:"16%",ticks:{callback:v=>"R$ "+kfmt(v)}}}};}
+
+/* ================= LANÇAMENTOS ================= */
+function ensureMonth(m){if(!DB.meses[m]){
+  const h=HIST_M[m];const hb=HIST_B[m]||{};
+  const ent=Object.entries(hb).map(([k,v])=>({marca:MARCAS.includes(k)?k:k,valor:v}));
+  let sa=[];
+  if(h){ if(h[1])sa.push({cat:"fixo",item:"Outro fixo",valor:h[1]});
+         if(h[2])sa.push({cat:"var",item:"Outros",valor:h[2]});
+         if(h[3])sa.push({cat:"imposto",item:"Simples / Impostos",valor:h[3]}); }
+  DB.meses[m]={entradas:ent.length?ent:MARCAS.map(k=>({marca:k,valor:0})),saidas:sa,prolabore:h?h[4]:0,saldo_inicial:0};
+}return DB.meses[m];}
+function renderLanc(){
+  const el=document.getElementById("v-lanc");
+  const months=[];const now=new Date();for(let i=0;i<18;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));}
+  allMonths().forEach(m=>{if(!months.includes(m))months.push(m);});
+  months.sort().reverse();
+  const cur=window._lancM||months.find(m=>DB.meses[m])||months[0];
+  window._lancM=cur;
+  const L=ensureMonth(cur);
+  const marcas=[...new Set([...MARCAS,...(L.entradas||[]).map(e=>e.marca)])];
+  const entMap={};(L.entradas||[]).forEach(e=>entMap[e.marca]=e.valor);
+  const com=(L.entradas||[]).reduce((s,e)=>s+(+e.valor||0),0);
+  let fixo=0,vr=0,imp=0;(L.saidas||[]).forEach(s=>{const v=+s.valor||0;if(s.cat==="fixo")fixo+=v;else if(s.cat==="var")vr+=v;else imp+=v;});
+  const custoReal=fixo+vr+imp,pro=+L.prolabore||0,si=+L.saldo_inicial||0;
+  const lpa=com-custoReal, caixa=com+si-custoReal-pro;
+  const saidasBy=c=>(L.saidas||[]).map((s,i)=>({...s,_i:i})).filter(s=>s.cat===c);
+  const saiRows=(c)=>{const rows=saidasBy(c);const items=CAT[c];
+    return items.map(it=>{const found=rows.find(r=>r.item===it);const val=found?found.valor:"";
+      return `<div class="fline"><span class="nm">${it}</span><input type="number" step="0.01" placeholder="0,00" value="${val}" oninput="setSaida('${cur}','${c}','${it.replace(/'/g,"")}',this.value)"></div>`;}).join("");};
+  el.innerHTML=`
+    <div class="row">
+      <div><label class="fl">Mês de referência</label>
+        <select id="lancM" onchange="window._lancM=this.value;renderLanc()">
+          ${months.map(m=>`<option value="${m}">${mLabel(m)}${DB.meses[m]&&aggFor(m).fonte==="lanc"?" ✎":""}</option>`).join("")}
+        </select></div>
+      <div><label class="fl">Saldo inicial (caixa mês anterior)</label>
+        <input type="number" step="0.01" value="${si||""}" placeholder="0,00" oninput="setField('${cur}','saldo_inicial',this.value)"></div>
+    </div>
+    <div class="lgrid">
+      <div class="box ent">
+        <h3>Entradas — comissões</h3><div class="bsub">Valor recebido por marca no mês</div>
+        ${marcas.map(mk=>`<div class="fline"><span class="nm">${mk}</span><input type="number" step="0.01" placeholder="0,00" value="${entMap[mk]!==undefined&&entMap[mk]!==0?entMap[mk]:""}" oninput="setEntrada('${cur}','${mk}',this.value)"></div>`).join("")}
+        <div class="fline"><input placeholder="+ outra marca / extra" id="newMarca" style="flex:1;width:auto"><button onclick="addMarca('${cur}')" style="padding:8px 12px;border:none;border-radius:9px;background:#15803d;color:#fff;font-weight:700;cursor:pointer">Add</button></div>
+        <div class="subtot"><span>Total comissões</span><span class="pos mono">R$ ${fmt(com)}</span></div>
+      </div>
+      <div class="box sai">
+        <h3>Saídas</h3><div class="bsub">Custos fixos, variáveis e impostos</div>
+        <label class="fl" style="margin-top:4px">Fixos</label>${saiRows("fixo")}
+        <label class="fl" style="margin-top:10px">Variáveis</label>${saiRows("var")}
+        <label class="fl" style="margin-top:10px">Impostos</label>${saiRows("imposto")}
+        <div class="subtot"><span>Custo real (sem pró-labore)</span><span class="neg mono">R$ ${fmt(custoReal)}</span></div>
+      </div>
+    </div>
+    <div class="lgrid" style="margin-top:16px">
+      <div class="box">
+        <h3>Pró-labore</h3><div class="bsub">Distribuição sócios (60/40)</div>
+        <div class="fline"><span class="nm">Total a distribuir</span><input type="number" step="0.01" value="${pro||""}" placeholder="0,00" oninput="setField('${cur}','prolabore',this.value)"></div>
+        <div class="fline"><span class="nm">Christopher (60%)</span><span class="mono" style="font-weight:700">R$ ${fmt(pro*0.6)}</span></div>
+        <div class="fline"><span class="nm">Valdicéia (40%)</span><span class="mono" style="font-weight:700">R$ ${fmt(pro*0.4)}</span></div>
+      </div>
+      <div class="resumo">
+        <div class="rr"><span>Comissões</span><span class="mono">R$ ${fmt(com)}</span></div>
+        <div class="rr"><span>Saldo inicial</span><span class="mono">R$ ${fmt(si)}</span></div>
+        <div class="rr"><span>(−) Custo real</span><span class="mono">R$ ${fmt(custoReal)}</span></div>
+        <div class="rr"><span>(−) Pró-labore</span><span class="mono">R$ ${fmt(pro)}</span></div>
+        <div class="rr big"><span>Lucro (LPA)</span><span class="g mono">R$ ${fmt(lpa)}</span></div>
+        <div class="rr big"><span>Em caixa</span><span class="mono">R$ ${fmt(caixa)}</span></div>
+      </div>
+    </div>
+    <div class="hint">Dica: os meses já preenchidos vêm do histórico e podem ser ajustados. Em breve você vai colar aqui os extratos da conta e do cartão para lançamento automático.</div>`;
+}
+function setEntrada(m,marca,val){const L=ensureMonth(m);let e=(L.entradas||[]).find(x=>x.marca===marca);if(!e){e={marca,valor:0};L.entradas.push(e);}e.valor=parseFloat(val)||0;liveTotals(m);changed();}
+function setSaida(m,cat,item,val){const L=ensureMonth(m);let s=(L.saidas||[]).find(x=>x.cat===cat&&x.item===item);const v=parseFloat(val)||0;if(!s){if(v===0)return;s={cat,item,valor:0};L.saidas.push(s);}s.valor=v;liveTotals(m);changed();}
+function setField(m,f,val){const L=ensureMonth(m);L[f]=parseFloat(val)||0;liveTotals(m);changed();}
+function addMarca(m){const inp=document.getElementById("newMarca");const v=(inp.value||"").trim().toUpperCase();if(!v)return;const L=ensureMonth(m);if(!(L.entradas||[]).some(e=>e.marca===v))L.entradas.push({marca:v,valor:0});changed();renderLanc();}
+let ltTimer=null;
+function liveTotals(m){clearTimeout(ltTimer);ltTimer=setTimeout(()=>{if(view==="lanc"){updateResumo(m);}},250);}
+function updateResumo(m){const L=DB.meses[m];if(!L)return;const com=(L.entradas||[]).reduce((s,e)=>s+(+e.valor||0),0);let cr=0;(L.saidas||[]).forEach(s=>cr+=(+s.valor||0));const pro=+L.prolabore||0,si=+L.saldo_inicial||0;const box=document.querySelector("#v-lanc .resumo");if(box)box.innerHTML=`
+    <div class="rr"><span>Comissões</span><span class="mono">R$ ${fmt(com)}</span></div>
+    <div class="rr"><span>Saldo inicial</span><span class="mono">R$ ${fmt(si)}</span></div>
+    <div class="rr"><span>(−) Custo real</span><span class="mono">R$ ${fmt(cr)}</span></div>
+    <div class="rr"><span>(−) Pró-labore</span><span class="mono">R$ ${fmt(pro)}</span></div>
+    <div class="rr big"><span>Lucro (LPA)</span><span class="g mono">R$ ${fmt(com-cr)}</span></div>
+    <div class="rr big"><span>Em caixa</span><span class="mono">R$ ${fmt(com+si-cr-pro)}</span></div>`;}
+
+/* ================= TABELA MENSAL ================= */
+function renderTab(){
+  const el=document.getElementById("v-tab");
+  const months=allMonths().slice().reverse();
+  let rows=months.map(m=>{const a=aggFor(m);return `<tr>
+    <td>${mLabel(m)}</td><td class="mono">${fmt0(a.com)}</td><td class="mono">${fmt0(a.fixo)}</td>
+    <td class="mono">${fmt0(a.var)}</td><td class="mono">${fmt0(a.imp)}</td><td class="mono">${fmt0(a.custoReal)}</td>
+    <td class="mono">${fmt0(a.pro)}</td><td class="mono">${fmt0(a.pro*0.6)}</td><td class="mono">${fmt0(a.pro*0.4)}</td><td class="mono pos">${fmt0(a.lpa)}</td><td class="mono">${a.com?(a.lpa/a.com*100).toFixed(0):0}%</td></tr>`;}).join("");
+  el.innerHTML=`<div class="panel" style="overflow:auto"><h3>Resumo mês a mês (histórico + lançamentos)</h3>
+    <table><thead><tr><th>Mês</th><th>Comissões</th><th>Fixo</th><th>Variável</th><th>Impostos</th><th>Custo real</th><th>Pró-labore</th><th>Chris 60%</th><th>Val 40%</th><th>LPA</th><th>Margem</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+/* ================= view switch ================= */
+function setView(v){view=v;document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===v));
+  ["dash","lanc","tab"].forEach(x=>document.getElementById("v-"+x).style.display=x===v?"block":"none");
+  if(v==="dash")renderDash();else if(v==="lanc")renderLanc();else renderTab();}
+
+/* ---------- persistência / sync (Firebase Realtime DB, sem token) ---------- */
+let API_ON=false,pushTimer=null,pushing=false,dirty=false,lastStamp=0,pollTimer=null;
+function setSync(x){const b=document.getElementById("syncBadge");if(!b)return;b.className="syncbadge "+(x||"");b.textContent=x==="ok"?"sincronizado":x==="saving"?"salvando...":x==="off"?"offline (local)":x==="err"?"erro":"•";}
+function saveLocal(){try{localStorage.setItem(STORE_KEY,JSON.stringify(DB));}catch(e){}}
+function changed(){DB.updated_at=Date.now();saveLocal();schedulePush();}
+function schedulePush(){dirty=true;setSync("saving");clearTimeout(pushTimer);pushTimer=setTimeout(pushToServer,700);}
+async function fbGet(){const r=await fetch(FB_URL+".json");if(!r.ok)throw new Error("get");const o=await r.json();return (o&&typeof o==="object"&&!o.error)?o:null;}
+async function pushToServer(){if(pushing){schedulePush();return;}pushing=true;try{const r=await fetch(FB_URL+".json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(DB)});if(!r.ok)throw new Error("put");lastStamp=DB.updated_at;dirty=false;API_ON=true;setSync("ok");}catch(e){API_ON=false;setSync("err");}finally{pushing=false;}}
+function startPolling(){if(pollTimer)return;pollTimer=setInterval(async()=>{if(pushing||dirty)return;const ae=document.activeElement;if(ae&&/INPUT|TEXTAREA|SELECT/.test(ae.tagName))return;try{const d=await fbGet();if(d&&d.updated_at&&d.updated_at!==lastStamp&&(d.updated_at>=(DB.updated_at||0))){DB=migrate(d);lastStamp=d.updated_at;saveLocal();setView(view);setSync("ok");}}catch(e){setSync("off");}},15000);}
+async function initSync(){try{const d=await fbGet();API_ON=true;if(d&&d.meses&&((d.updated_at||0)>=(DB.updated_at||0))){DB=migrate(d);lastStamp=d.updated_at||0;saveLocal();setView(view);}else{await pushToServer();}setSync("ok");startPolling();}catch(e){API_ON=false;setSync("off");startPolling();}}
+
+/* ---------- boot ---------- */
+function boot(){try{const raw=localStorage.getItem(STORE_KEY);if(raw)DB=migrate(JSON.parse(raw));}catch(e){}if(!DB)DB=blankDB();setView("dash");initSync();}
+if(window.chrToken||sessionStorage.getItem("chr_pass"))boot();else window.addEventListener("chr-auth",boot,{once:true});
+setTimeout(()=>{if(!DB)boot();},1200);
+</script>
+</body>
+</html>
