@@ -478,6 +478,7 @@ function renderClientes(){
     sel("fMarca",fMarca,["VONDER","LAHUMAN","MACCAFERRI","NEWFIX","MULTIFITAS"],"Marca-foco")+
     sel("fStatus",fStatus,STATUS,"Status")+
     `<label style="font-size:12px;display:flex;gap:5px;align-items:center"><input type="checkbox" ${fAg?"checked":""} onchange="fAg=this.checked;renderClientes()">só agendamento</label>`+
+    '<button class="btn gh" onclick="openCarteiraImport()" title="Buscar e importar clientes que já estão cadastrados na Carteira Master">&#8595; Importar da Carteira</button>'+
     '<button class="btn" onclick="newCli()">+ Cliente</button>'+
     '</div>';
   let l=filterCli();
@@ -517,6 +518,108 @@ function newCli(){
   const id="C"+Date.now().toString(36);
   DB.custom.push({id,nome:nome.trim(),cidade:cidade.trim(),reg:reg.trim(),ciclo:"",seg:seg.trim()});
   changed();rebuild();renderClientes();toast("Cliente criado");
+}
+
+/* ===== IMPORTAR DA CARTEIRA MASTER =====
+   Puxa os clientes já cadastrados na Carteira Master (carteira.html),
+   deixa buscar e selecionar vários de uma vez e cadastra na aba Clientes,
+   já vinculados ao cadastro original da carteira. */
+let CART_DATA=null, cartSel={}, cartLoading=false, cartQ="";
+function titleCase(s){return (s||"").toString().toLowerCase().replace(/\b([a-zà-ú])/g,m=>m.toUpperCase()).replace(/\bDe\b|\bDa\b|\bDo\b|\bE\b|\bDas\b|\bDos\b/g,m=>m.toLowerCase());}
+/* nomes de clientes que já existem na base de rotas (para não duplicar) */
+function existingNameSet(){const s=new Set();CLI.forEach(c=>s.add(norm(c.nome)));return s;}
+function existingCartIds(){const s=new Set();(DB.custom||[]).forEach(c=>{if(c.cartId!=null)s.add(String(c.cartId));});return s;}
+async function loadCarteira(){
+  if(CART_DATA)return CART_DATA;
+  cartLoading=true; renderCartPick();
+  try{
+    const r=await fetch("carteira.html",{cache:"force-cache"});
+    const txt=await r.text();
+    const mk="const SEED = ";
+    const i=txt.indexOf(mk);
+    const j=txt.indexOf(";\nconst CLIENTES",i);
+    if(i<0||j<0)throw new Error("SEED nao encontrado");
+    const seed=JSON.parse(txt.slice(i+mk.length,j).trim());
+    CART_DATA=(seed.clientes||[]).map(c=>{
+      const f=(c.filiais&&c.filiais[0])||{};
+      return {cid:c.id, nome:c.fant||c.nome||"", cidade:titleCase(f.cid||""), uf:(c.uf&&c.uf[0])||f.uf||"",
+              seg:(c.segs&&c.segs[0])||"", status:c.status||"", _s:norm((c.fant||c.nome||"")+" "+(f.cid||"")+" "+(f.doc||""))};
+    });
+  }catch(e){CART_DATA=null;toast("Falha ao carregar a Carteira Master");}
+  cartLoading=false; return CART_DATA;
+}
+function openCarteiraImport(){
+  cartSel={}; cartQ="";
+  $("#drw").innerHTML=`<div class="dh"><button class="x" onclick="closeDrw()">×</button><h2>Importar da Carteira Master</h2>`+
+    `<div style="font-size:12px;opacity:.9">Busque e selecione clientes já cadastrados na carteira</div></div>`+
+    `<div class="bd">`+
+      `<div class="fld"><input type="text" id="cartQ" placeholder="Buscar por nome, cidade ou CNPJ..." oninput="cartQ=this.value;renderCartPick()"></div>`+
+      `<div id="cartActions" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap"></div>`+
+      `<div id="cartList"></div>`+
+    `</div>`;
+  showDrw();
+  renderCartPick();
+  loadCarteira().then(()=>{const e=$("#cartQ");if(e)e.focus();renderCartPick();});
+}
+function renderCartPick(){
+  const list=$("#cartList"), act=$("#cartActions");
+  if(!list)return;
+  if(cartLoading||!CART_DATA){
+    if(act)act.innerHTML="";
+    list.innerHTML='<p class="empty">Carregando a Carteira Master (26 mil clientes)... isso pode levar alguns segundos na 1ª vez.</p>';
+    return;
+  }
+  const q=norm(cartQ);
+  const already=existingNameSet(), gotIds=existingCartIds();
+  let l=CART_DATA;
+  if(q)l=l.filter(c=>c._s.includes(q)); else l=l.slice(0,60);
+  const total=l.length;
+  l=l.slice(0,80);
+  const selCount=Object.keys(cartSel).filter(k=>cartSel[k]).length;
+  if(act)act.innerHTML=
+    `<button class="btn sm" onclick="cartAddSelected()" ${selCount?"":"disabled style=opacity:.5"}>+ Adicionar ${selCount||""} selecionado${selCount===1?"":"s"}</button>`+
+    `<button class="btn gh sm" onclick="cartSelectAllVisible()">Marcar visíveis</button>`+
+    (selCount?`<button class="btn gh sm" onclick="cartSel={};renderCartPick()">Limpar seleção</button>`:"")+
+    `<span class="hint" style="margin-left:auto">${q?total+" encontrado(s)":"digite para buscar"}</span>`;
+  if(!l.length){list.innerHTML='<p class="empty">Nenhum cliente encontrado na carteira com esse termo.</p>';return;}
+  list.innerHTML="<ul style='list-style:none;margin:0;padding:0'>"+l.map(c=>{
+    const dup=gotIds.has(String(c.cid))||already.has(norm(c.nome));
+    const on=!!cartSel[c.cid];
+    return `<li style="display:flex;gap:9px;align-items:flex-start;padding:9px 4px;border-top:1px solid #f1f4f8;${dup?'opacity:.55':''}">`+
+      (dup?`<span class="chip" style="flex:none">na base</span>`
+          :`<input type="checkbox" ${on?"checked":""} style="margin-top:3px;flex:none;width:16px;height:16px" onchange="cartToggle(${c.cid},this.checked)">`)+
+      `<span style="flex:1;font-size:13px">${esc(c.nome)}<br>`+
+        `<span class="sub" style="color:var(--mut);font-size:11px">${esc(c.cidade||"—")}${c.uf?" · "+esc(c.uf):""}${c.seg?" · "+esc(c.seg):""} · <b>${esc(c.status)}</b></span></span>`+
+    `</li>`;
+  }).join("")+"</ul>"+
+    (total>80?`<p class="hint" style="margin-top:8px">Mostrando 80 de ${total}. Refine a busca para ver mais.</p>`:"");
+}
+function cartToggle(cid,on){cartSel[cid]=on;renderCartPick();}
+function cartSelectAllVisible(){
+  const q=norm(cartQ);const already=existingNameSet(),gotIds=existingCartIds();
+  let l=CART_DATA||[];l=q?l.filter(c=>c._s.includes(q)).slice(0,80):l.slice(0,60);
+  l.forEach(c=>{if(!(gotIds.has(String(c.cid))||already.has(norm(c.nome))))cartSel[c.cid]=true;});
+  renderCartPick();
+}
+function cartAddSelected(){
+  const ids=Object.keys(cartSel).filter(k=>cartSel[k]);
+  if(!ids.length){toast("Nada selecionado");return;}
+  const byId={};(CART_DATA||[]).forEach(c=>byId[c.cid]=c);
+  const gotIds=existingCartIds(), already=existingNameSet();
+  let n=0;
+  ids.forEach((cid,k)=>{
+    const c=byId[cid];if(!c)return;
+    if(gotIds.has(String(c.cid))||already.has(norm(c.nome)))return;
+    const id="C"+Date.now().toString(36)+k;
+    DB.custom.push({id,nome:c.nome,cidade:c.cidade,reg:c.uf||"",ciclo:"",seg:c.seg||"",cartId:c.cid});
+    ov(id).link={panel:"carteira",q:c.nome};
+    n++;
+  });
+  if(!n){toast("Selecionados já estavam na base");return;}
+  cartSel={};
+  changed();rebuild();
+  toast(n+" cliente(s) importado(s) da carteira");
+  renderCartPick();
 }
 
 /* ======================= DRAWER (detalhe) ======================= */
