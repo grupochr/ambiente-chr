@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farol de Risco · CHR Representação</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f6f8; color: #1a1d29; padding: 16px; font-size: 14px; }
+h1 { font-size: 20px; margin-bottom: 4px; color: #0f172a; }
+a { color: #0066cc; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+.subtitle { color: #64748b; font-size: 13px; }
+.filters { background: #fff; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-group label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #64748b; font-weight: 600; }
+.filter-group select, .filter-group input { padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; background: #fff; color: #0f172a; min-width: 140px; }
+.btn { padding: 7px 14px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; color: #0f172a; font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn:hover { border-color: #0066cc; color: #0066cc; }
+.btn.primary { background: #0066cc; border-color: #0066cc; color: #fff; }
+.btn.primary:hover { background: #0055aa; color: #fff; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi-card { background: #fff; border-radius: 8px; padding: 14px; border-left: 4px solid #cbd5e1; cursor: pointer; transition: box-shadow .15s; }
+.kpi-card:hover { box-shadow: 0 2px 10px rgba(15,23,42,.10); }
+.kpi-card.sel { box-shadow: 0 0 0 2px #0066cc inset; }
+.kpi-card.g { border-left-color: #16a34a; }
+.kpi-card.a { border-left-color: #d97706; }
+.kpi-card.v { border-left-color: #dc2626; }
+.kpi-card.n { border-left-color: #0066cc; }
+.kpi-card .label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #64748b; font-weight: 600; }
+.kpi-card .value { font-size: 26px; font-weight: 700; color: #0f172a; margin-top: 4px; line-height: 1.1; }
+.kpi-card .secondary { font-size: 12px; color: #64748b; margin-top: 3px; }
+.card { background: #fff; border-radius: 8px; padding: 14px; margin-bottom: 16px; }
+.card h3 { font-size: 14px; margin-bottom: 10px; color: #0f172a; }
+.alert { background: #eff6ff; border-left: 4px solid #0066cc; border-radius: 6px; padding: 10px 12px; font-size: 13px; color: #1e3a5f; margin-bottom: 16px; }
+.alert.warn { background: #fffbeb; border-left-color: #d97706; color: #713f12; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #eef2f6; white-space: nowrap; }
+th { background: #f8fafc; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #64748b; font-weight: 600; cursor: pointer; position: sticky; top: 0; z-index: 2; }
+th:hover { color: #0066cc; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:hover { background: #f8fafc; }
+.tw { overflow: auto; max-height: 68vh; border-radius: 8px; background: #fff; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.dot.g { background: #16a34a; } .dot.a { background: #d97706; } .dot.v { background: #dc2626; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.pill.g { background: #dcfce7; color: #15803d; } .pill.a { background: #fef3c7; color: #b45309; } .pill.v { background: #fee2e2; color: #b91c1c; }
+.pill.gray { background: #f1f5f9; color: #64748b; }
+.cli { white-space: normal; min-width: 230px; font-weight: 500; }
+.motivo { white-space: normal; min-width: 260px; color: #475569; font-size: 12px; }
+.muted { color: #94a3b8; }
+select.bol { padding: 3px 6px; border: 1px solid #e2e8f0; border-radius: 5px; font-size: 12px; background: #fff; }
+select.bol.on { border-color: #d97706; color: #b45309; font-weight: 600; }
+select.bol.on15 { border-color: #dc2626; color: #b91c1c; font-weight: 600; }
+.legend { font-size: 12px; color: #64748b; line-height: 1.7; }
+.legend b { color: #0f172a; }
+#loading { padding: 40px; text-align: center; color: #64748b; }
+@media (max-width: 640px) { body { padding: 10px; } .kpi-card .value { font-size: 22px; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Farol de Risco da Carteira</h1>
+    <div class="subtitle">CHR Representação · Manual Operacional v2.3, cap. 7.3 — conferir toda segunda, junto da montagem da rota</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <a href="vendas.html" class="btn" style="text-decoration:none">← Vendas</a>
+    <a href="index.html" class="btn" style="text-decoration:none">Início</a>
+    <button class="btn primary" id="btnCsv">Exportar CSV</button>
+  </div>
+</div>
+
+<div id="loading">Carregando a base do painel de vendas…</div>
+
+<div id="app" style="display:none">
+
+<div class="alert" id="infoBase"></div>
+
+<div class="kpi-grid" id="kpis"></div>
+
+<div class="filters">
+  <div class="filter-group"><label>Farol</label><select id="fFarol"><option value="">Todos</option><option value="AMARELO+VERMELHO">Só Amarelo + Vermelho</option><option value="VERDE">Verde</option><option value="AMARELO">Amarelo</option><option value="VERMELHO">Vermelho</option></select></div>
+  <div class="filter-group"><label>Representada</label><select id="fRep"><option value="">Todas</option></select></div>
+  <div class="filter-group"><label>Segmento</label><select id="fSeg"><option value="">Todos</option></select></div>
+  <div class="filter-group"><label>Cidade</label><select id="fCid"><option value="">Todas</option></select></div>
+  <div class="filter-group"><label>Curva</label><select id="fCur"><option value="">Todas</option><option>A</option><option>B</option><option>C</option></select></div>
+  <div class="filter-group" style="flex:1"><label>Buscar cliente</label><input id="fBusca" type="text" placeholder="nome ou CNPJ" style="width:100%"></div>
+  <button class="btn" id="btnLimpar">Limpar</button>
+</div>
+
+<div class="card" style="padding:0">
+  <div class="tw"><table id="tab"><thead><tr>
+    <th data-s="farolOrd">Farol</th>
+    <th data-s="nome">Cliente</th>
+    <th data-s="curva">Curva</th>
+    <th data-s="rep">Representadas</th>
+    <th data-s="seg">Segmento</th>
+    <th data-s="cidade">Cidade</th>
+    <th data-s="ultima" class="num">Última compra</th>
+    <th data-s="dias" class="num">Dias</th>
+    <th data-s="ciclo" class="num">Ciclo</th>
+    <th data-s="vonderRest" class="num">Vonder (dias)</th>
+    <th data-s="fat" class="num">Faturado 2026</th>
+    <th data-s="boleto">Título</th>
+    <th>Por que está nessa cor</th>
+  </tr></thead><tbody id="tbody"></tbody></table></div>
+</div>
+
+<div class="card">
+  <h3>Como o farol é calculado</h3>
+  <div class="legend">
+    <b><span class="dot v"></span>VERMELHO</b> — mais de 90 dias sem compra (inativo, cap. 7.1), <b>ou</b> cliente Vonder com menos de 15 dias de prazo restante na regra dos 60 dias, <b>ou</b> título vencido há mais de 15 dias. → Ação do Chris, com visita ou ligação direta. Decidir se recupera ou libera.<br>
+    <b><span class="dot a"></span>AMARELO</b> — passou do ciclo de recompra do próprio cliente, <b>ou</b> tem boleto vencido, <b>ou</b> é Vonder com menos de 30 dias de prazo restante. → Contato obrigatório na semana. É aqui que o cliente é salvo.<br>
+    <b><span class="dot g"></span>VERDE</b> — comprou dentro do ciclo esperado e sem título vencido. → Manter cadência.<br><br>
+    <b>Ciclo de recompra</b> = mediana dos intervalos entre as compras do próprio cliente em 2026. Com menos de duas compras, usa o padrão do segmento (ferragista de giro rápido 30 dias; telas, redes e agro 45; construtora, aço e atacado 60), conforme cap. 5.8.<br>
+    <b>Prazo Vonder</b> = 60 dias menos os dias desde a última compra Vonder (cap. 8). Faixas: acima de 45 confortável · 30–45 observação · 15–29 alerta · abaixo de 15 crítico.<br>
+    <b>Título vencido</b> não existe na base de faturamento — é a marcação manual na coluna "Título". Fica salva neste navegador.<br>
+    <b>Curva</b> calculada por Pareto sobre o faturamento de 2026 (A até 80% do acumulado, B até 95%, C o restante) — é uma leitura do realizado, não a carteira de foco do planejamento.
+  </div>
+</div>
+
+</div>
+
+<script>
+const HOJE = new Date(); HOJE.setHours(0,0,0,0);
+const CICLO_SEG = { 'Ferragista':30, 'Ferragista/Diversos':30, 'Diversos':30, 'Telas':45, 'Redes':45, 'Agropecuária':45, 'Matcon':45, 'Gesso':45, 'Construtora':60, 'Distribuidor de Aço':60, 'Atacado Matcon':60 };
+const CICLO_PADRAO = 45, LIM_INATIVO = 90;
+const FLAGS_KEY = 'chr_farol_titulos_v1';
+let FLAGS = {}; try { FLAGS = JSON.parse(localStorage.getItem(FLAGS_KEY) || '{}'); } catch(e) { FLAGS = {}; }
+const salvarFlags = () => { try { localStorage.setItem(FLAGS_KEY, JSON.stringify(FLAGS)); } catch(e) {} };
+
+const norm = s => (s||'').toString().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+const dias = (a,b) => Math.round((b-a)/86400000);
+const parseData = s => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s||''); return m ? new Date(+m[1], +m[2]-1, +m[3]) : null; };
+const fmtData = d => d ? String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear() : '—';
+const fmtBRL = v => 'R$ ' + (v||0).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
+const mediana = a => { if(!a.length) return null; const s=[...a].sort((x,y)=>x-y), m=s.length>>1; return s.length%2 ? s[m] : Math.round((s[m-1]+s[m])/2); };
+
+function extrairDADOS(txt) {
+  const i = txt.indexOf('const DADOS');
+  if (i < 0) throw new Error('Não encontrei o bloco de dados no vendas.html.');
+  const ini = txt.indexOf('{', i);
+  let d = 0, str = false, esc = false, fim = -1;
+  for (let p = ini; p < txt.length; p++) {
+    const c = txt[p];
+    if (str) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') str = false; continue; }
+    if (c === '"') str = true;
+    else if (c === '{') d++;
+    else if (c === '}') { d--; if (d === 0) { fim = p; break; } }
+  }
+  if (fim < 0) throw new Error('Bloco de dados incompleto no vendas.html.');
+  const lit = txt.slice(ini, fim+1);
+  // O bloco é literal JS, não JSON puro: troca NaN / Infinity / undefined por null fora das strings.
+  let out = '', s = false, e = false;
+  for (let p = 0; p < lit.length; p++) {
+    const c = lit[p];
+    if (s) { out += c; if (e) e = false; else if (c === '\\') e = true; else if (c === '"') s = false; continue; }
+    if (c === '"') { s = true; out += c; continue; }
+    const r = lit.slice(p, p+9);
+    if (/^-?Infinity/.test(r)) { out += 'null'; p += (r[0] === '-' ? 9 : 8) - 1; continue; }
+    if (/^NaN/.test(r)) { out += 'null'; p += 2; continue; }
+    if (/^undefined/.test(r)) { out += 'null'; p += 8; continue; }
+    out += c;
+  }
+  return JSON.parse(out);
+}
+
+function montar(DADOS) {
+  const F = (DADOS.faturamento_2026 || []).filter(r => r && r.data);
+  const map = new Map();
+  for (const r of F) {
+    const k = norm(r.cliente); if (!k) continue;
+    let c = map.get(k);
+    if (!c) { c = { key:k, nome:r.cliente, cnpj:r.cnpj||'', segs:new Set(), reps:new Set(), cidades:new Set(), estado:r.estado||'', datas:new Set(), datasVonder:new Set(), fat:0 }; map.set(k, c); }
+    if (r.cnpj && !c.cnpj) c.cnpj = r.cnpj;
+    if (r.segmento) c.segs.add(r.segmento);
+    if (r.representada) c.reps.add(r.representada);
+    if (r.cidade) c.cidades.add(r.cidade);
+    c.datas.add(r.data);
+    if (r.representada === 'VONDER') c.datasVonder.add(r.data);
+    c.fat += (+r.valor_faturado || +r.valor_total || 0);
+  }
+
+  const lista = [];
+  for (const c of map.values()) {
+    const ds = [...c.datas].sort().map(parseData);
+    const ultima = ds[ds.length-1];
+    const diasSem = dias(ultima, HOJE);
+    const ints = []; for (let i=1;i<ds.length;i++) ints.push(dias(ds[i-1], ds[i]));
+    const seg = [...c.segs][0] || null;
+    let ciclo = mediana(ints.filter(x => x > 0));
+    let cicloOrigem = 'histórico';
+    if (ciclo == null) { ciclo = CICLO_SEG[seg] || CICLO_PADRAO; cicloOrigem = 'padrão do segmento'; }
+    ciclo = Math.max(15, Math.min(120, ciclo));
+
+    const dv = [...c.datasVonder].sort().map(parseData);
+    const ultVonder = dv.length ? dv[dv.length-1] : null;
+    const vonderRest = ultVonder ? 60 - dias(ultVonder, HOJE) : null;
+
+    lista.push({ ...c, seg: seg||'—', rep:[...c.reps].sort().join(', '), cidade:[...c.cidades][0]||'—',
+      ultima, diasSem, ciclo, cicloOrigem, ultVonder, vonderRest, compras: ds.length });
+  }
+
+  // Curva ABC por Pareto sobre o faturado 2026
+  const total = lista.reduce((s,c)=>s+c.fat, 0) || 1;
+  let acc = 0;
+  [...lista].sort((a,b)=>b.fat-a.fat).forEach(c => { acc += c.fat; const p = acc/total; c.curva = p <= .8 ? 'A' : p <= .95 ? 'B' : 'C'; });
+
+  lista.forEach(classificar);
+  return lista;
+}
+
+function classificar(c) {
+  const bol = (FLAGS[c.key] || 'none');
+  const mot = [];
+  let cor = 'VERDE';
+  const sobe = (novo) => { const o = {VERDE:0, AMARELO:1, VERMELHO:2}; if (o[novo] > o[cor]) cor = novo; };
+
+  if (c.diasSem > LIM_INATIVO) { sobe('VERMELHO'); mot.push(`${c.diasSem} dias sem compra — inativo (mais de 3 meses)`); }
+  else if (c.diasSem > c.ciclo) { sobe('AMARELO'); mot.push(`passou do ciclo de recompra: ${c.diasSem} dias desde a última compra, ciclo de ${c.ciclo} dias`); }
+
+  if (c.vonderRest != null) {
+    if (c.vonderRest < 0) { sobe('VERMELHO'); mot.push(`caiu da carteira Vonder há ${Math.abs(c.vonderRest)} dias — reconquista como cliente novo`); }
+    else if (c.vonderRest < 15) { sobe('VERMELHO'); mot.push(`Vonder crítico: faltam ${c.vonderRest} dias para cair da carteira`); }
+    else if (c.vonderRest < 30) { sobe('AMARELO'); mot.push(`Vonder em alerta: ${c.vonderRest} dias de prazo restante`); }
+  }
+
+  if (bol === 'venc15') { sobe('VERMELHO'); mot.push('título vencido há mais de 15 dias'); }
+  else if (bol === 'venc') { sobe('AMARELO'); mot.push('boleto vencido em aberto'); }
+
+  c.boleto = bol;
+  c.farol = cor;
+  c.farolOrd = cor === 'VERMELHO' ? 0 : cor === 'AMARELO' ? 1 : 2;
+  c.motivo = mot.length ? mot.join(' · ') : 'dentro do ciclo e sem título vencido — manter cadência';
+}
+
+let LISTA = [], ordem = { campo:'farolOrd', dir:1 };
+
+function filtrada() {
+  const f = id => document.getElementById(id).value;
+  const fa = f('fFarol'), rep = f('fRep'), seg = f('fSeg'), cid = f('fCid'), cur = f('fCur');
+  const q = norm(f('fBusca'));
+  return LISTA.filter(c =>
+    (!fa || (fa === 'AMARELO+VERMELHO' ? c.farol !== 'VERDE' : c.farol === fa)) &&
+    (!rep || c.rep.includes(rep)) && (!seg || c.seg === seg) && (!cid || c.cidade === cid) && (!cur || c.curva === cur) &&
+    (!q || c.key.includes(q) || (c.cnpj||'').includes(f('fBusca')))
+  );
+}
+
+function render() {
+  const L = filtrada();
+  const cmp = (a,b) => { const x=a[ordem.campo], y=b[ordem.campo];
+    if (x == null) return 1; if (y == null) return -1;
+    if (typeof x === 'number' || x instanceof Date) return (x-y)*ordem.dir;
+    return String(x).localeCompare(String(y),'pt-BR')*ordem.dir; };
+  const sorted = [...L].sort((a,b) => cmp(a,b) || (a.farolOrd-b.farolOrd) || (b.fat-a.fat));
+
+  const cls = c => c.farol === 'VERDE' ? 'g' : c.farol === 'AMARELO' ? 'a' : 'v';
+  document.getElementById('tbody').innerHTML = sorted.map(c => {
+    const vr = c.vonderRest == null ? '<span class="muted">—</span>'
+      : c.vonderRest < 0 ? `<span class="pill v">caiu</span>`
+      : `<span class="pill ${c.vonderRest<15?'v':c.vonderRest<30?'a':c.vonderRest<45?'gray':'g'}">${c.vonderRest}</span>`;
+    const bs = c.boleto === 'venc' ? 'on' : c.boleto === 'venc15' ? 'on15' : '';
+    return `<tr>
+      <td><span class="pill ${cls(c)}"><span class="dot ${cls(c)}"></span>${c.farol}</span></td>
+      <td class="cli">${c.nome}${c.cnpj?`<div class="muted" style="font-size:11px;font-weight:400">${c.cnpj}</div>`:''}</td>
+      <td>${c.curva}</td><td>${c.rep}</td><td>${c.seg}</td><td>${c.cidade}</td>
+      <td class="num">${fmtData(c.ultima)}</td>
+      <td class="num">${c.diasSem}</td>
+      <td class="num">${c.ciclo}${c.cicloOrigem==='histórico'?'':'<span class="muted">*</span>'}</td>
+      <td class="num">${vr}</td>
+      <td class="num">${fmtBRL(c.fat)}</td>
+      <td><select class="bol ${bs}" data-k="${c.key}">
+        <option value="none"${c.boleto==='none'?' selected':''}>em dia</option>
+        <option value="venc"${c.boleto==='venc'?' selected':''}>vencido</option>
+        <option value="venc15"${c.boleto==='venc15'?' selected':''}>vencido +15d</option>
+      </select></td>
+      <td class="motivo">${c.motivo}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="13" style="padding:24px;text-align:center;color:#94a3b8">Nenhum cliente com esses filtros.</td></tr>';
+
+  document.querySelectorAll('select.bol').forEach(s => s.onchange = e => {
+    const k = e.target.dataset.k, v = e.target.value;
+    if (v === 'none') delete FLAGS[k]; else FLAGS[k] = v;
+    salvarFlags();
+    const c = LISTA.find(x => x.key === k); if (c) classificar(c);
+    render();
+  });
+
+  const cnt = cor => L.filter(c => c.farol === cor).length;
+  const risco = L.filter(c => c.farol !== 'VERDE').reduce((s,c)=>s+c.fat, 0);
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi-card n"><div class="label">Clientes na leitura</div><div class="value">${L.length}</div><div class="secondary">de ${LISTA.length} com compra em 2026</div></div>
+    <div class="kpi-card g" data-f="VERDE"><div class="label">Verde</div><div class="value">${cnt('VERDE')}</div><div class="secondary">manter cadência</div></div>
+    <div class="kpi-card a" data-f="AMARELO"><div class="label">Amarelo</div><div class="value">${cnt('AMARELO')}</div><div class="secondary">contato obrigatório na semana</div></div>
+    <div class="kpi-card v" data-f="VERMELHO"><div class="label">Vermelho</div><div class="value">${cnt('VERMELHO')}</div><div class="secondary">ação do Chris: visita ou ligação</div></div>
+    <div class="kpi-card n"><div class="label">Faturamento em risco</div><div class="value">${fmtBRL(risco)}</div><div class="secondary">amarelos + vermelhos, 2026</div></div>`;
+  document.querySelectorAll('.kpi-card[data-f]').forEach(el => el.onclick = () => {
+    const s = document.getElementById('fFarol');
+    s.value = (s.value === el.dataset.f) ? '' : el.dataset.f; render();
+  });
+}
+
+function csv() {
+  const L = filtrada();
+  const cab = ['Farol','Cliente','CNPJ','Curva','Representadas','Segmento','Cidade','UF','Ultima compra','Dias sem compra','Ciclo (dias)','Prazo Vonder','Faturado 2026','Titulo','Motivo'];
+  const linhas = L.map(c => [c.farol, c.nome, c.cnpj, c.curva, c.rep, c.seg, c.cidade, c.estado, fmtData(c.ultima), c.diasSem, c.ciclo,
+    c.vonderRest == null ? '' : c.vonderRest, (c.fat||0).toFixed(2).replace('.',','),
+    c.boleto === 'venc15' ? 'vencido +15d' : c.boleto === 'venc' ? 'vencido' : 'em dia', c.motivo]);
+  const esc = v => '"' + String(v ?? '').replace(/"/g,'""') + '"';
+  const txt = '﻿' + [cab, ...linhas].map(l => l.map(esc).join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt], {type:'text/csv;charset=utf-8'}));
+  a.download = 'farol-carteira-chr-' + HOJE.toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+(async function () {
+  try {
+    const txt = await fetch('vendas.html?v=' + Date.now()).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); });
+    const DADOS = extrairDADOS(txt);
+    LISTA = montar(DADOS);
+
+    const ger = parseData(DADOS.gerado_em);
+    const idade = ger ? dias(ger, HOJE) : null;
+    const ult = LISTA.reduce((m,c) => !m || c.ultima > m ? c.ultima : m, null);
+    document.getElementById('infoBase').className = 'alert' + (idade != null && idade > 10 ? ' warn' : '');
+    document.getElementById('infoBase').innerHTML =
+      `<strong>Base:</strong> painel de vendas gerado em ${fmtData(ger)}${idade != null ? ` (${idade} dia${idade===1?'':'s'} atrás)` : ''} · último faturamento na base: ${fmtData(ult)} · leitura feita contra hoje, ${fmtData(HOJE)}.` +
+      (idade != null && idade > 10 ? ' <strong>Atualize o vendas.html antes de usar esta lista na reunião de segunda</strong> — com a base velha, todo mundo envelhece junto e o farol acusa risco que talvez não exista.' : '');
+
+    const enche = (id, vals) => { const s = document.getElementById(id);
+      [...vals].filter(Boolean).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')).forEach(v => s.insertAdjacentHTML('beforeend', `<option>${v}</option>`)); };
+    enche('fRep', new Set(LISTA.flatMap(c => c.rep.split(', '))));
+    enche('fSeg', new Set(LISTA.map(c => c.seg)));
+    enche('fCid', new Set(LISTA.map(c => c.cidade)));
+
+    ['fFarol','fRep','fSeg','fCid','fCur'].forEach(id => document.getElementById(id).onchange = render);
+    document.getElementById('fBusca').oninput = render;
+    document.getElementById('btnLimpar').onclick = () => {
+      ['fFarol','fRep','fSeg','fCid','fCur','fBusca'].forEach(id => document.getElementById(id).value = ''); render(); };
+    document.getElementById('btnCsv').onclick = csv;
+    document.querySelectorAll('th[data-s]').forEach(th => th.onclick = () => {
+      const c = th.dataset.s;
+      ordem = { campo:c, dir: ordem.campo === c ? -ordem.dir : (['nome','rep','seg','cidade','curva','boleto'].includes(c) ? 1 : -1) };
+      render();
+    });
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = '';
+    render();
+  } catch (e) {
+    document.getElementById('loading').innerHTML =
+      '<div class="alert warn" style="text-align:left"><strong>Não consegui carregar a base.</strong> ' + e.message +
+      '<br>Esta página lê os dados direto do <code>vendas.html</code> que está na mesma pasta. Abra pelo endereço publicado (grupochr.github.io/ambiente-chr/farol.html), não pelo arquivo local.</div>';
+  }
+})();
+</script>
+<script src="gate.js"></script>
+</body>
+</html>
