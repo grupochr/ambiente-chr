@@ -1,13 +1,14 @@
 /* === SYNC CHR — Firebase RTDB (sincronização aberta entre aparelhos) ===
    Cada painel sincroniza APENAS a sua própria chave de localStorage, num nó
-   próprio do banco. Páginas sem mapeamento (index, vendas) são ignoradas.
+   próprio do banco. Páginas sem mapeamento (index) são ignoradas.
    Inclua <script src="sync.js"></script> no <head>, ANTES do script do painel. */
 (function () {
   var BASE = "https://jornada-v8-default-rtdb.firebaseio.com/";
   var MAP = {
     "rotas.html":    { key: "chr_rotas_db_v1",    node: "ambiente-chr-rotas" },
     "atacados.html": { key: "chr_atacados_db_v2", node: "ambiente-chr-atacados" },
-    "carteira.html": { key: "chr_carteira_ov_v3", node: "ambiente-chr-carteira" }
+    "carteira.html": { key: "chr_carteira_ov_v3", node: "ambiente-chr-carteira" },
+    "vendas.html":   { key: "chr_vendas_carteira_v1", node: "ambiente-chr-vendas-carteira" }
   };
   var page = (location.pathname.split("/").pop() || "").toLowerCase();
   var cfg = MAP[page];
