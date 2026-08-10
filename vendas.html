@@ -78,6 +78,27 @@ h1 { font-size: 20px; margin-bottom: 4px; color: #0f172a; }
 .meta-mes.bg-red { background: #fee2e2; color: #991b1b; }
 .meta-mes.bg-gray { background: #f1f5f9; color: #94a3b8; }
 .meta-mes.bg-current { background: #dbeafe; color: #1e40af; border: 2px solid #0066cc; }
+
+/* ==== Bloco Pedidos x Faturamento x Meta ==== */
+.pf-head { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+.pf-title { font-size:16px; font-weight:700; color:#0f172a; }
+.pf-sub { font-size:12px; color:#64748b; margin-top:2px; }
+.pf-toggle { display:inline-flex; background:#e2e8f0; border-radius:8px; padding:3px; gap:3px; }
+.pf-btn { border:none; background:transparent; padding:7px 14px; border-radius:6px; font-size:12.5px; font-weight:600; color:#475569; cursor:pointer; }
+.pf-btn.on { background:#0066cc; color:#fff; box-shadow:0 1px 3px rgba(0,0,0,.15); }
+.pf-btn:hover:not(.on) { background:#f1f5f9; }
+.emp-card { display:flex; flex-direction:column; }
+.emp-head { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; }
+.emp-nome { font-size:14px; font-weight:700; color:#0f172a; display:flex; align-items:center; gap:7px; }
+.emp-dot { width:10px; height:10px; border-radius:3px; display:inline-block; }
+.emp-badge { font-size:11px; font-weight:700; padding:3px 9px; border-radius:11px; white-space:nowrap; }
+.emp-linhas { display:flex; flex-direction:column; gap:3px; }
+.emp-l { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:12px; color:#475569; padding:2px 0; }
+.emp-l span { flex:1 1 auto; }
+.emp-l strong { font-size:13px; color:#0f172a; white-space:nowrap; }
+.emp-l em { font-style:normal; font-size:11px; color:#94a3b8; white-space:nowrap; min-width:96px; text-align:right; }
+.emp-msg { margin-top:10px; font-size:12px; color:#334155; background:#f8fafc; border-left:4px solid #10b981; border-radius:5px; padding:8px 10px; }
+.emp-nota { margin-top:5px; font-size:11px; color:#64748b; }
 </style>
 </head>
 <body>
@@ -115,13 +136,19 @@ h1 { font-size: 20px; margin-bottom: 4px; color: #0f172a; }
   <div class="filter-group"><label>Representada</label><select id="f-rep"><option value="all">Todas</option></select></div>
   <div class="filter-group"><label>Segmento</label><select id="f-seg"><option value="all">Todos</option></select></div>
   <div class="filter-group"><label>Vendedor</label><select id="f-vend"><option value="all">Todos</option></select></div>
-  <div class="filter-group"><label>Fonte (2026)</label><select id="f-tipo"><option value="faturamento" selected>Faturamento (NF)</option><option value="pedido">Pedidos</option></select></div>
+  <div class="filter-group"><label>Ver por (2026)</label><select id="f-tipo"><option value="faturamento" selected>Faturamento (NF emitida)</option><option value="pedido">Pedidos enviados</option></select></div>
   <button class="btn-clear" onclick="limparFiltros()">Limpar</button>
 </div>
 
 <div class="kpi-grid" id="kpis"></div>
 
 <div class="tab-content active" id="tab-overview">
+  <div id="coberturaBox"></div>
+  <div class="charts-grid" id="gridEmpresas"></div>
+  <div class="table-card">
+    <h3 style="font-size:13px;color:#334155;margin-bottom:8px;">Pedido a pedido &mdash; quanto já foi faturado e quanto falta</h3>
+    <div id="tabelaPedidosAbertos"></div>
+  </div>
   <div class="charts-grid">
     <div class="chart-card full"><h3>Evolução Mensal — Faturamento por Representada</h3><div class="chart-container tall"><canvas id="chartMensal"></canvas></div></div>
     <div class="chart-card"><h3>Faturamento por Representada</h3><div class="chart-container"><canvas id="chartRep"></canvas></div></div>
@@ -1125,11 +1152,236 @@ function sazoView() {
   });
 }
 
+// ===== MOTOR PEDIDO x FATURAMENTO x META (bloco Visao Geral) =====
+const REPS_ORDEM = ['MACCAFERRI','VONDER','LAHUMAN','NEWFIX','MULTIFITAS'];
+const REP_NOTA = { 'VONDER': 'A base Vonder (Osten + Dismatal) vem do portal já faturada: cada pedido chega com NF. Por isso pedido = faturado e não existe carteira em aberto aqui.' };
+
+function repsVisiveis(){
+  const set = new Set();
+  DADOS.pedidos_2026.forEach(r => set.add(r.representada));
+  DADOS.faturamento_2026.forEach(r => set.add(r.representada));
+  Object.keys(DADOS.metas_mensais_2026).forEach(r => set.add(r));
+  let arr = REPS_ORDEM.filter(r => set.has(r)).concat([...set].filter(r => !REPS_ORDEM.includes(r)).sort());
+  if (state.rep !== 'all') arr = arr.filter(r => r === state.rep);
+  return arr;
+}
+
+function mesFoco(){ return state.mes !== 'all' ? '2026-' + state.mes : CURRENT_MONTH; }
+function proxMes(m){ const [y,mo]=m.split('-').map(Number); return mo===12 ? `${y+1}-01` : `${y}-${String(mo+1).padStart(2,'0')}`; }
+function nomeMes(m){ return MESES_PT[Number(m.split('-')[1])-1] + '/' + m.split('-')[0].slice(2); }
+function metaRepMes(rep, m){ return (DADOS.metas_mensais_2026[rep] || {})[m] || 0; }
+function metaRepYTD(rep){ return CLOSED_MONTHS.reduce((s,m)=> s + metaRepMes(rep,m), 0); }
+
+// Junta pedido (Mercos) com as NFs emitidas contra aquele pedido.
+function motorPF(){
+  if (motorPF._c) return motorPF._c;
+  const fatMes = {}, pedMes = {}, ped = {};
+  DADOS.pedidos_2026.forEach(r => {
+    const rep = r.representada, k = rep + '|' + String(r.pedido);
+    (pedMes[rep] = pedMes[rep] || {})[r.mes] = (pedMes[rep][r.mes] || 0) + (r.valor || 0);
+    if (!ped[k]) ped[k] = { rep, pedido: String(r.pedido), cliente: r.cliente || r.razao_social || '—', data: r.data || null, data_str: r.data_str || '', mes: r.mes, valor: 0, fat: 0, semPedido: false };
+    ped[k].valor += (r.valor || 0);
+  });
+  DADOS.faturamento_2026.forEach(r => {
+    const rep = r.representada, k = rep + '|' + String(r.pedido);
+    (fatMes[rep] = fatMes[rep] || {})[r.mes] = (fatMes[rep][r.mes] || 0) + (r.valor_faturado || 0);
+    if (!ped[k]) ped[k] = { rep, pedido: String(r.pedido), cliente: r.cliente || '—', data: r.data || null, data_str: r.data_str || '', mes: r.mes, valor: 0, fat: 0, semPedido: true };
+    ped[k].fat += (r.valor_faturado || 0);
+  });
+  const hoje = new Date();
+  const lista = Object.values(ped).map(p => {
+    p.saldo = Math.max(0, p.valor - p.fat);
+    p.pct = p.valor > 0 ? Math.min(100, p.fat / p.valor * 100) : (p.fat > 0 ? 100 : 0);
+    p.dias = p.data ? Math.round((hoje - new Date(p.data + 'T00:00:00')) / 86400000) : null;
+    p.status = p.valor <= 0 ? 'sem pedido' : (p.saldo <= Math.max(1, p.valor * 0.005) ? 'faturado' : (p.fat > 0 ? 'parcial' : 'aberto'));
+    return p;
+  });
+  const abertos = lista.filter(p => p.saldo > 1).sort((a,b) => b.saldo - a.saldo);
+  motorPF._c = { fatMes, pedMes, lista, abertos };
+  return motorPF._c;
+}
+
+function carteiraRep(rep, apenasRecente){
+  const ab = motorPF().abertos.filter(p => p.rep === rep && (!apenasRecente || (p.dias !== null && p.dias <= 60)));
+  return { valor: ab.reduce((s,p) => s + p.saldo, 0), n: ab.length };
+}
+
+function barra(pct, cor){
+  return `<div class="progress-bar"><div class="fill ${cor}" style="width:${Math.max(0,Math.min(pct,100))}%"></div></div>`;
+}
+function corPct(p){ return p >= 100 ? 'green' : p >= 80 ? 'amber' : 'red'; }
+function hexPct(p){ return p >= 100 ? '#16a34a' : p >= 80 ? '#d97706' : '#dc2626'; }
+
+// ---- Bloco 1: cobertura consolidada ----
+function coberturaView(){
+  const el = document.getElementById('coberturaBox');
+  if (!el) return;
+  if (state.ano !== '2026' && state.ano !== 'all'){
+    el.innerHTML = '<div class="alert warn"><strong>Bloco Pedidos x Meta:</strong> disponível apenas para 2026 (os dados de 2025 não trazem número de pedido). Selecione Ano = 2026.</div>';
+    return;
+  }
+  const M = motorPF(), reps = repsVisiveis(), mf = mesFoco(), pm = proxMes(mf);
+  const soma = (o, m) => reps.reduce((s,r) => s + ((o[r] || {})[m] || 0), 0);
+  const fatMesV = soma(M.fatMes, mf), pedMesV = soma(M.pedMes, mf);
+  const metaMesV = reps.reduce((s,r) => s + metaRepMes(r, mf), 0);
+  const fatYTD = CLOSED_MONTHS.reduce((s,m) => s + soma(M.fatMes, m), 0);
+  const pedYTD = CLOSED_MONTHS.reduce((s,m) => s + soma(M.pedMes, m), 0);
+  const metaYTD = reps.reduce((s,r) => s + metaRepYTD(r), 0);
+  const cart = reps.reduce((a,r) => { const c = carteiraRep(r,false); a.valor += c.valor; a.n += c.n; return a; }, {valor:0,n:0});
+  const cartRec = reps.reduce((a,r) => { const c = carteiraRep(r,true); a.valor += c.valor; a.n += c.n; return a; }, {valor:0,n:0});
+  const metaProx = reps.reduce((s,r) => s + metaRepMes(r, pm), 0);
+  const isPed = state.tipo === 'pedido';
+  const realV = isPed ? pedMesV : fatMesV, realYTDv = isPed ? pedYTD : fatYTD;
+  const rotulo = isPed ? 'Pedidos enviados' : 'Faturado (NF)';
+  const pctMes = metaMesV > 0 ? realV / metaMesV * 100 : 0;
+  const pctYTD = metaYTD > 0 ? realYTDv / metaYTD * 100 : 0;
+  const pctCob = metaProx > 0 ? cartRec.valor / metaProx * 100 : 0;
+  const faltaProx = Math.max(0, metaProx - cartRec.valor);
+
+  el.innerHTML = `
+  <div class="pf-head">
+    <div>
+      <div class="pf-title">Pedidos × Faturamento × Meta</div>
+      <div class="pf-sub">Mês de referência: <strong>${nomeMes(mf)}</strong>${state.mes==='all' ? ' (último mês fechado)' : ''} &bull; acumulado jan&ndash;${nomeMes(CLOSED_MONTHS[CLOSED_MONTHS.length-1]).split('/')[0].toLowerCase()} &bull; base ${DADOS.gerado_em.split('-').reverse().join('/')}</div>
+    </div>
+    <div class="pf-toggle">
+      <button class="pf-btn ${!isPed?'on':''}" onclick="setFonte('faturamento')">Faturamento (NF)</button>
+      <button class="pf-btn ${isPed?'on':''}" onclick="setFonte('pedido')">Pedidos enviados</button>
+    </div>
+  </div>
+  <div class="kpi-grid" style="margin-bottom:12px;">
+    <div class="kpi-card">
+      <div class="label">${rotulo} &mdash; ${nomeMes(mf)}</div>
+      <div class="value">${fmtBRL(realV)}</div>
+      <div class="secondary">Meta ${fmtBRL(metaMesV)} &bull; <span style="color:${hexPct(pctMes)};font-weight:700">${pctMes.toFixed(0)}%</span></div>
+      ${barra(pctMes, corPct(pctMes))}
+    </div>
+    <div class="kpi-card">
+      <div class="label">${rotulo} &mdash; acumulado 2026</div>
+      <div class="value">${fmtBRL(realYTDv)}</div>
+      <div class="secondary">Meta YTD ${fmtBRL(metaYTD)} &bull; <span style="color:${hexPct(pctYTD)};font-weight:700">${pctYTD.toFixed(0)}%</span></div>
+      ${barra(pctYTD, corPct(pctYTD))}
+    </div>
+    <div class="kpi-card">
+      <div class="label">Carteira em aberto (a faturar)</div>
+      <div class="value" style="color:#0066cc">${fmtBRL(cart.valor)}</div>
+      <div class="secondary">${cart.n} pedidos &bull; ${fmtBRL(cartRec.valor)} com até 60 dias (${cartRec.n})</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Cobertura da meta de ${nomeMes(pm)}</div>
+      <div class="value" style="color:${hexPct(pctCob)}">${pctCob.toFixed(0)}%</div>
+      <div class="secondary">Carteira ${fmtBRLshort(cartRec.valor)} de ${fmtBRLshort(metaProx)}</div>
+      ${barra(pctCob, corPct(pctCob))}
+    </div>
+    <div class="kpi-card">
+      <div class="label">Falta em pedido novo (${nomeMes(pm)})</div>
+      <div class="value" style="color:${faltaProx>0?'#dc2626':'#16a34a'}">${fmtBRL(faltaProx)}</div>
+      <div class="secondary">${faltaProx>0 ? 'Precisa entrar em pedido para bater a meta' : 'Carteira já cobre a meta do mês'}</div>
+    </div>
+  </div>
+  <div class="alert ${faltaProx>0?'warn':''}" style="margin-bottom:14px;">
+    <strong>Leitura rápida:</strong> a carteira com até 60 dias (${fmtBRL(cartRec.valor)}) cobre <strong>${pctCob.toFixed(0)}%</strong> da meta de ${nomeMes(pm)} (${fmtBRL(metaProx)}).
+    ${faltaProx>0 ? `Faltam <strong>${fmtBRL(faltaProx)}</strong> em pedido novo &mdash; sem isso o mês não fecha na meta mesmo faturando tudo que já está na mão.` : 'Basta faturar o que já está na mão.'}
+    ${cart.valor - cartRec.valor > 1 ? `Há ainda ${fmtBRL(cart.valor - cartRec.valor)} em pedidos com mais de 60 dias sem faturar &mdash; conferir se são reais ou cancelados.` : ''}
+  </div>`;
+}
+
+function setFonte(v){
+  const s = document.getElementById('f-tipo');
+  if (s.value === v) return;
+  s.value = v; atualizarFiltros();
+}
+
+// ---- Bloco 2: um card + um grafico por empresa ----
+function cardsEmpresasView(){
+  const wrap = document.getElementById('gridEmpresas');
+  if (!wrap) return;
+  if (state.ano !== '2026' && state.ano !== 'all'){ wrap.innerHTML = ''; return; }
+  const M = motorPF(), reps = repsVisiveis(), mf = mesFoco(), pm = proxMes(mf);
+  wrap.innerHTML = reps.map(rep => {
+    const fat = (M.fatMes[rep] || {})[mf] || 0;
+    const ped = (M.pedMes[rep] || {})[mf] || 0;
+    const meta = metaRepMes(rep, mf);
+    const fatY = CLOSED_MONTHS.reduce((s,m) => s + ((M.fatMes[rep]||{})[m]||0), 0);
+    const pedY = CLOSED_MONTHS.reduce((s,m) => s + ((M.pedMes[rep]||{})[m]||0), 0);
+    const metaY = metaRepYTD(rep);
+    const c = carteiraRep(rep, false), cR = carteiraRep(rep, true);
+    const metaP = metaRepMes(rep, pm);
+    const pctM = meta > 0 ? fat/meta*100 : 0, pctY = metaY > 0 ? fatY/metaY*100 : 0;
+    const pctC = metaP > 0 ? cR.valor/metaP*100 : 0;
+    const falta = Math.max(0, metaP - cR.valor);
+    const conv = pedY > 0 ? Math.min(100, fatY/pedY*100) : 0;
+    return `
+    <div class="chart-card emp-card">
+      <div class="emp-head">
+        <div class="emp-nome"><span class="emp-dot" style="background:${REP_COLORS[rep]||'#64748b'}"></span>${rep}</div>
+        <div class="emp-badge" style="background:${hexPct(pctM)}1a;color:${hexPct(pctM)}">${meta>0?pctM.toFixed(0)+'% da meta de '+nomeMes(mf):'sem meta'}</div>
+      </div>
+      <div class="emp-linhas">
+        <div class="emp-l"><span>${nomeMes(mf)} &mdash; faturado</span><strong>${fmtBRL(fat)}</strong><em>meta ${fmtBRLshort(meta)}</em></div>
+        ${barra(pctM, corPct(pctM))}
+        <div class="emp-l"><span>${nomeMes(mf)} &mdash; pedidos enviados</span><strong>${fmtBRL(ped)}</strong><em>${meta>0?(ped/meta*100).toFixed(0)+'% da meta':'&nbsp;'}</em></div>
+        <div class="emp-l"><span>Acumulado 2026 &mdash; faturado</span><strong>${fmtBRL(fatY)}</strong><em>meta ${fmtBRLshort(metaY)} &bull; ${pctY.toFixed(0)}%</em></div>
+        ${barra(pctY, corPct(pctY))}
+        <div class="emp-l"><span>Carteira em aberto</span><strong style="color:#0066cc">${fmtBRL(c.valor)}</strong><em>${c.n} pedido${c.n===1?'':'s'}${c.valor-cR.valor>1?' &bull; '+fmtBRLshort(c.valor-cR.valor)+' &gt;60d':''}</em></div>
+        <div class="emp-l"><span>Conversão pedido &rarr; NF (ano)</span><strong>${conv.toFixed(0)}%</strong><em>${fmtBRLshort(fatY)} de ${fmtBRLshort(pedY)}</em></div>
+      </div>
+      <div class="emp-msg" style="border-left-color:${falta>0?'#f59e0b':'#10b981'}">
+        ${metaP>0 ? (falta>0
+          ? `Meta ${nomeMes(pm)}: ${fmtBRL(metaP)}. Carteira cobre ${pctC.toFixed(0)}% &mdash; faltam <strong>${fmtBRL(falta)}</strong> em pedido novo.`
+          : `Meta ${nomeMes(pm)}: ${fmtBRL(metaP)}. Carteira ja cobre ${pctC.toFixed(0)}% da meta.`) : 'Sem meta definida para o próximo mês.'}
+        ${REP_NOTA[rep] ? `<div class="emp-nota">${REP_NOTA[rep]}</div>` : ''}
+      </div>
+      <div class="chart-container" style="height:220px;margin-top:10px;"><canvas id="cvEmp-${rep}"></canvas></div>
+    </div>`;
+  }).join('');
+
+  reps.forEach(rep => {
+    const cv = document.getElementById('cvEmp-' + rep); if (!cv) return;
+    const fatD = MESES_KEYS_2026.map(m => CLOSED_MONTHS.includes(m) ? ((M.fatMes[rep]||{})[m]||0) : null);
+    const pedD = MESES_KEYS_2026.map(m => CLOSED_MONTHS.includes(m) ? ((M.pedMes[rep]||{})[m]||0) : null);
+    const metaD = MESES_KEYS_2026.map(m => metaRepMes(rep, m) || null);
+    charts['emp_' + rep] = new Chart(cv, {
+      type: 'bar',
+      data: { labels: MESES_PT, datasets: [
+        { label: 'Faturado (NF)', data: fatD, backgroundColor: REP_COLORS[rep] || '#64748b', borderWidth: 0, order: 2 },
+        { label: 'Pedidos enviados', data: pedD, backgroundColor: 'rgba(100,116,139,0.28)', borderColor: 'rgba(100,116,139,0.75)', borderWidth: 1, order: 3 },
+        { label: 'Meta', type: 'line', data: metaD, borderColor: '#dc2626', borderDash: [5,4], borderWidth: 2, pointRadius: 0, fill: false, order: 1 }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false,
+        scales: { y: { ticks: { callback: v => fmtBRLshort(v), font: { size: 10 } } }, x: { ticks: { font: { size: 10 } } } },
+        plugins: { valueLabels: false, legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y != null ? fmtBRL(c.parsed.y) : '—'}` } } } }
+    });
+  });
+}
+
+// ---- Bloco 3: pedido a pedido ----
+function tabelaAbertosView(){
+  const alvo = document.getElementById('tabelaPedidosAbertos');
+  if (!alvo) return;
+  if (state.ano !== '2026' && state.ano !== 'all'){ alvo.innerHTML = '<div style="color:#94a3b8;font-size:12px;padding:12px 0;">Disponível apenas para 2026.</div>'; return; }
+  const reps = repsVisiveis();
+  const rows = motorPF().abertos.filter(p => reps.includes(p.rep)).map(p => [
+    p.rep, p.pedido, p.data_str || '—', String(p.cliente || '—'),
+    fmtBRL(p.valor), fmtBRL(p.fat), fmtBRL(p.saldo),
+    p.pct.toFixed(0) + '%', p.dias === null ? '—' : p.dias + 'd'
+  ]);
+  alvo.innerHTML = '';
+  if (!rows.length){ alvo.innerHTML = '<div style="color:#94a3b8;font-size:12px;padding:12px 0;">Nenhum pedido em aberto no filtro atual.</div>'; return; }
+  new gridjs.Grid({
+    columns: ['Representada','Pedido','Data','Cliente','Valor do pedido','Já faturado','Saldo a faturar','% faturado','Idade'],
+    data: rows, sort: true, search: true, pagination: { limit: 15, summary: true },
+    style: { table: { 'font-size': '12px' } }
+  }).render(alvo);
+}
+
 function renderizar() {
   destruirCharts();
   renderKPIs();
   const ativa = document.querySelector('.tab.active').dataset.tab;
   if (ativa === 'overview') {
+    coberturaView(); cardsEmpresasView(); tabelaAbertosView();
     chartEvolucaoMensal(); chartRepresentadas(); chartSegmentos(); chartComparativo();
   } else if (ativa === 'metas') {
     metasKPIsView(); chartRitmoAnoView(); matrizRepresentadasView();
